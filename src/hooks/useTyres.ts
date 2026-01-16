@@ -1,9 +1,9 @@
 'use client';
 
-import { useSupabaseQuery } from './useSupabase';
 import { createClient } from '@/lib/supabase/client';
-import { useCallback, useEffect, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useCallback, useEffect, useState } from 'react';
+import { useSupabaseQuery } from './useSupabase';
 
 // Database row types
 export interface TyreRow {
@@ -49,7 +49,7 @@ export function useTyres(vehicleId?: string) {
   return useSupabaseQuery<TyreRow>('tyres', {
     filter,
     orderBy: { column: 'position', ascending: true },
-    realtime: true,
+    realtime: false,
   });
 }
 

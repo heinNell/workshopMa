@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { MainLayout } from '@/components/layout';
-import { Card, CardHeader, CardTitle, Button, Tabs, TabPanel, Badge } from '@/components/ui';
 import { InspectionList } from '@/components/inspections';
-import { Plus, Filter, Calendar } from 'lucide-react';
+import { MainLayout } from '@/components/layout';
+import { Badge, Button, Card, CardHeader, Tabs } from '@/components/ui';
 import type { Inspection } from '@/types';
+import { Calendar, Filter, Plus } from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const mockInspections: Inspection[] = [

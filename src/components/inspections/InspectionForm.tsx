@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, Button, Badge, StatusBadge, Input, Textarea, Select } from '@/components/ui';
+import { Badge, Button, Card, Input, Textarea } from '@/components/ui';
 import { cn, formatDate } from '@/lib/utils';
-import { CheckCircle, XCircle, Minus, Camera, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle, ChevronDown, ChevronRight, Minus, XCircle } from 'lucide-react';
+import { useState } from 'react';
 
 interface InspectionCategory {
   id: string;

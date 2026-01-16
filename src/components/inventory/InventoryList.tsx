@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, Button, Badge, Input, Select, DataTable } from '@/components/ui';
-import { formatCurrency, formatDate } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-import { Package, Plus, Search, AlertTriangle, TrendingDown, TrendingUp } from 'lucide-react';
+import { Badge, Button, Card, Input, Select } from '@/components/ui';
+import { cn, formatCurrency } from '@/lib/utils';
 import type { InventoryItem } from '@/types';
+import { AlertTriangle, Package, Plus, Search, TrendingDown, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
 
 interface InventoryListProps {
   items: InventoryItem[];

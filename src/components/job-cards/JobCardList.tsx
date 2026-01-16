@@ -1,12 +1,9 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { Card, Badge, PriorityBadge, StatusBadge } from '@/components/ui';
-import { formatDate, formatCurrency } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-import { FileText, ChevronRight, Clock, User, Wrench } from 'lucide-react';
+import { Badge, Card, PriorityBadge } from '@/components/ui';
+import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import type { JobCard } from '@/types';
+import { ChevronRight, Clock, FileText, User, Wrench } from 'lucide-react';
 
 interface JobCardListProps {
   jobCards: JobCard[];
@@ -105,7 +102,7 @@ export function JobCardList({
                   <span className="text-xs font-mono text-dark-400">
                     {jobCard.jobNumber}
                   </span>
-                  <Badge variant={getStatusColor(jobCard.status) as any}>
+                  <Badge variant={getStatusColor(jobCard.status) as 'default' | 'success' | 'warning' | 'danger' | 'info'}>
                     {formatStatus(jobCard.status)}
                   </Badge>
                   <PriorityBadge priority={jobCard.priority} />

@@ -1,20 +1,18 @@
 'use client';
 
-import React from 'react';
+import { Card, StatusBadge } from '@/components/ui';
+import { cn, formatCurrency, formatDate } from '@/lib/utils';
+import
+  {
+    AlertTriangle,
+    Calendar,
+    Circle,
+    FileText,
+    Gauge,
+    Truck,
+    Wrench,
+  } from 'lucide-react';
 import Link from 'next/link';
-import { Card, StatusBadge, Badge } from '@/components/ui';
-import { formatDate, formatCurrency } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-import {
-  Truck,
-  Calendar,
-  Gauge,
-  AlertTriangle,
-  Wrench,
-  ChevronRight,
-  Circle,
-  FileText,
-} from 'lucide-react';
 
 interface VehicleDashboardProps {
   fleetNumber: string;

@@ -1,9 +1,9 @@
 'use client';
 
-import { useSupabaseQuery } from './useSupabase';
 import { createClient } from '@/lib/supabase/client';
-import { useCallback, useEffect, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useCallback, useEffect, useState } from 'react';
+import { useSupabaseQuery } from './useSupabase';
 
 // Database row types
 export interface InspectionRow {
@@ -29,7 +29,7 @@ export function useInspections(vehicleId?: string) {
   return useSupabaseQuery<InspectionRow>('inspections', {
     filter,
     orderBy: { column: 'scheduled_date', ascending: false },
-    realtime: true,
+    realtime: false,
   });
 }
 

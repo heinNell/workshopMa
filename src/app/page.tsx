@@ -1,26 +1,26 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import { FleetOverviewCard, RecentActivity, StatCard, UpcomingSchedule } from '@/components/dashboard';
 import { MainLayout } from '@/components/layout';
-import { StatCard, RecentActivity, UpcomingSchedule, FleetOverviewCard } from '@/components/dashboard';
-import { Card, CardHeader, CardTitle, Button } from '@/components/ui';
-import {
-  Truck,
-  ClipboardCheck,
-  FileText,
-  AlertTriangle,
-  Package,
-  Circle,
-  TrendingUp,
-  Calendar,
-  Loader2,
-} from 'lucide-react';
-import { useFleetSummary } from '@/hooks/useVehicles';
-import { useInspectionStats } from '@/hooks/useInspections';
-import { useJobCardStats } from '@/hooks/useJobCards';
+import { Button, Card, CardHeader, CardTitle } from '@/components/ui';
 import { useFaultStats } from '@/hooks/useFaults';
-import { useInventoryStats, useLowStockItems } from '@/hooks/useInventory';
+import { useInspectionStats } from '@/hooks/useInspections';
+import { useInventoryStats } from '@/hooks/useInventory';
+import { useJobCardStats } from '@/hooks/useJobCards';
 import { useOverdueMaintenance } from '@/hooks/useScheduledMaintenance';
+import { useFleetSummary } from '@/hooks/useVehicles';
+import
+  {
+    AlertTriangle,
+    Calendar,
+    Circle,
+    ClipboardCheck,
+    FileText,
+    Package,
+    TrendingUp,
+    Truck
+  } from 'lucide-react';
+import { useMemo } from 'react';
 
 export default function DashboardPage() {
   // Fetch real data from Supabase
@@ -29,10 +29,13 @@ export default function DashboardPage() {
   const { data: jobCardStats, loading: jobCardsLoading } = useJobCardStats();
   const { data: faultStats, loading: faultsLoading } = useFaultStats();
   const { data: inventoryStats, loading: inventoryLoading } = useInventoryStats();
-  const { data: lowStockItems } = useLowStockItems();
   const { data: overdueMaintenance } = useOverdueMaintenance();
 
   const isLoading = fleetLoading || inspectionsLoading || jobCardsLoading || faultsLoading || inventoryLoading;
+
+  // Use a deterministic timestamp to avoid server/client render mismatches during hydration
+  const fallbackTimestamp = '2024-01-01T00:00:00.000Z';
+  const referenceNow = useMemo(() => new Date(fallbackTimestamp), [fallbackTimestamp]);
 
   // Calculate totals from fleet summary
   const totalFleet = useMemo(() => {
@@ -61,7 +64,7 @@ export default function DashboardPage() {
       description: 'Connected to Supabase database',
       fleetNumber: '-',
       status: 'completed',
-      timestamp: new Date().toISOString(),
+      timestamp: fallbackTimestamp,
     },
   ];
 
@@ -72,10 +75,13 @@ export default function DashboardPage() {
       type: 'maintenance' as const,
       title: item.maintenance_type,
       fleetNumber: item.fleet_number || '-',
-      dueDate: item.next_due_date || new Date().toISOString(),
-      priority: item.next_due_date && new Date(item.next_due_date) < new Date() ? 'urgent' as const : 'medium' as const,
+      dueDate: item.next_due_date || fallbackTimestamp,
+      priority:
+        item.next_due_date && new Date(item.next_due_date) < referenceNow
+          ? ('urgent' as const)
+          : ('medium' as const),
     }));
-  }, [overdueMaintenance]);
+  }, [overdueMaintenance, fallbackTimestamp, referenceNow]);
 
   // Map fleet summary to expected format
   const fleetStats = useMemo(() => {

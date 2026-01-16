@@ -1,16 +1,16 @@
 'use client';
 
-import React from 'react';
-import { Sidebar } from './Sidebar';
-import { Header } from './Header';
-import { useSidebarStore } from '@/store';
 import { cn } from '@/lib/utils';
+import { useSidebarStore } from '@/store';
+import React from 'react';
+import { Header } from './Header';
+import { Sidebar } from './Sidebar';
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-export function MainLayout({ children }: MainLayoutProps) {
+export const MainLayout = React.memo(function MainLayout({ children }: MainLayoutProps) {
   const { isCollapsed } = useSidebarStore();
 
   return (
@@ -36,4 +36,5 @@ export function MainLayout({ children }: MainLayoutProps) {
       </div>
     </div>
   );
-}
+});
+MainLayout.displayName = 'MainLayout';

@@ -1,11 +1,9 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { Card, CardHeader, CardTitle, StatusBadge, PriorityBadge } from '@/components/ui';
+import { Card, CardHeader, CardTitle, PriorityBadge } from '@/components/ui';
+import { calculateDaysUntil, cn } from '@/lib/utils';
 import { ChevronRight, Clock } from 'lucide-react';
-import { formatDate, calculateDaysUntil } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface ScheduledItem {
   id: string;

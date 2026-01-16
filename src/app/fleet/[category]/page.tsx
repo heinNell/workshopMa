@@ -1,13 +1,12 @@
 'use client';
 
-import React from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import { MainLayout } from '@/components/layout';
-import { Card, CardHeader, CardTitle, Badge, StatusBadge, Button } from '@/components/ui';
-import { getCategoryConfig, type FleetCategory } from '@/lib/constants';
+import { Button, Card, StatusBadge } from '@/components/ui';
 import { useVehicles } from '@/hooks/useVehicles';
-import { ChevronRight, Truck, Plus, ClipboardCheck, Loader2 } from 'lucide-react';
+import { getCategoryConfig, type FleetCategory } from '@/lib/constants';
+import { ChevronRight, ClipboardCheck, Loader2, Plus, Truck } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 export default function FleetCategoryPage() {
   const params = useParams();
@@ -24,7 +23,7 @@ export default function FleetCategoryPage() {
     bakkies: 'bakkie',
   };
   
-  const { data: vehicles, loading, error } = useVehicles(vehicleTypeMap[category]);
+  const { data: vehicles, loading } = useVehicles(vehicleTypeMap[category]);
 
   if (!categoryConfig) {
     return (

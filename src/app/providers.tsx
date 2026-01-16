@@ -1,0 +1,8 @@
+'use client';
+
+import { SupabaseAuthProvider } from '@/components/auth/SupabaseAuthProvider';
+import React from 'react';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return <SupabaseAuthProvider>{children}</SupabaseAuthProvider>;
+}

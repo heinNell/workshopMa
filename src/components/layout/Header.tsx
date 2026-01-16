@@ -1,9 +1,9 @@
 'use client';
 
+import { useSupabaseAuth } from '@/components/auth/SupabaseAuthProvider';
+import { Bell, ChevronRight, User } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import React from 'react';
-import { usePathname } from 'next/navigation';
-import { Bell, User, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface BreadcrumbItem {
   label: string;
@@ -31,9 +31,21 @@ function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
   return breadcrumbs;
 }
 
-export function Header() {
+export const Header = React.memo(function Header() {
   const pathname = usePathname();
   const breadcrumbs = generateBreadcrumbs(pathname);
+  const { user, signOut, loading } = useSupabaseAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      console.error('Sign-out failed:', error.message);
+      return;
+    }
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <header className="h-16 bg-dark-950/80 backdrop-blur-xl border-b border-primary-500/10 flex items-center justify-between px-6">
@@ -65,16 +77,23 @@ export function Header() {
         </button>
 
         {/* User menu */}
-        <button className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-lg transition-colors">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
             <User className="w-4 h-4 text-white" />
           </div>
           <div className="hidden md:block text-left">
-            <p className="text-sm font-medium text-white">Workshop Admin</p>
-            <p className="text-xs text-dark-400">Administrator</p>
+            <p className="text-sm font-medium text-white">{user?.email || 'Signed out'}</p>
+            <p className="text-xs text-dark-400">{loading ? 'Loading session…' : 'Authenticated'}</p>
           </div>
-        </button>
+          <button
+            onClick={handleSignOut}
+            className="text-xs text-primary-400 hover:text-primary-300"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </header>
   );
-}
+});
+Header.displayName = 'Header';

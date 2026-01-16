@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout';
-import { Card, CardHeader, CardTitle, Button, Tabs, Badge } from '@/components/ui';
 import { TyreList } from '@/components/tyres';
-import { Plus, Filter, RotateCcw, Circle } from 'lucide-react';
+import { Button, Card, CardHeader, Tabs } from '@/components/ui';
 import type { Tyre } from '@/types';
+import { Circle, Filter, Plus, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const mockTyres: Tyre[] = [

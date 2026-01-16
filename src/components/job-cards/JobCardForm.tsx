@@ -1,9 +1,8 @@
 'use client';
 
+import { Badge, Button, Card, Input, PriorityBadge, Select, Textarea } from '@/components/ui';
+import { Package, Plus, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
-import { Card, Button, Input, Textarea, Select, Badge, PriorityBadge } from '@/components/ui';
-import { cn, formatDate } from '@/lib/utils';
-import { Plus, Trash2, Package, Clock } from 'lucide-react';
 
 interface JobCardFormProps {
   fleetNumber: string;
@@ -108,7 +107,7 @@ export function JobCardForm({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl font-bold text-white">New Job Card</h2>
-            <p className="text-dark-400 mt-1">Fleet: {fleetNumber}</p>
+            <p className="text-dark-400 mt-1">Fleet: {fleetNumber} ({category})</p>
           </div>
           <div className="flex items-center gap-3">
             <PriorityBadge priority={formData.priority} />
@@ -143,14 +142,14 @@ export function JobCardForm({
               label="Job Type"
               options={jobTypeOptions}
               value={formData.jobType}
-              onChange={(e) => updateField('jobType', e.target.value as any)}
+              onChange={(e) => updateField('jobType', e.target.value as 'repair' | 'maintenance' | 'inspection' | 'modification')}
             />
 
             <Select
               label="Priority"
               options={priorityOptions}
               value={formData.priority}
-              onChange={(e) => updateField('priority', e.target.value as any)}
+              onChange={(e) => updateField('priority', e.target.value as 'low' | 'medium' | 'high' | 'urgent')}
             />
           </div>
 

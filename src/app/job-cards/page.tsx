@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { MainLayout } from '@/components/layout';
-import { Card, CardHeader, CardTitle, Button, Tabs, Badge } from '@/components/ui';
 import { JobCardList } from '@/components/job-cards';
-import { Plus, Filter, Download } from 'lucide-react';
+import { MainLayout } from '@/components/layout';
+import { Button, Card, CardHeader, Tabs } from '@/components/ui';
 import type { JobCard } from '@/types';
+import { Download, Filter, Plus } from 'lucide-react';
+import { useState } from 'react';
 
 // Mock data
 const mockJobCards: JobCard[] = [

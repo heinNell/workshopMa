@@ -1,61 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { FLEET_CATEGORIES, MAIN_NAV_ITEMS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/store';
-import { FLEET_CATEGORIES, MAIN_NAV_ITEMS, type FleetCategory } from '@/lib/constants';
-import {
-  LayoutDashboard,
-  ClipboardCheck,
-  FileText,
-  Circle,
-  Package,
-  BarChart3,
-  ChevronDown,
-  ChevronRight,
-  Truck,
-  Thermometer,
-  Container,
-  Car,
-  PanelLeftClose,
-  PanelLeft,
-  Search,
-  Settings,
-  HelpCircle,
-} from 'lucide-react';
-
-const iconMap: Record<string, React.ElementType> = {
-  LayoutDashboard,
-  ClipboardCheck,
-  FileText,
-  Circle,
-  Package,
-  BarChart3,
-  Truck,
-  Thermometer,
-  Container,
-  TruckIcon: Truck,
-  Car,
-};
-
-function NavIcon({ name, className }: { name: string; className?: string }) {
-  const Icon = iconMap[name] || Circle;
-  return <Icon className={className} />;
-}
+import { ChevronDown, ChevronRight, HelpCircle, PanelLeft, PanelLeftClose, Search, Settings, Truck } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import React, { useState } from 'react';
+import { NavIcon } from './SidebarIcons';
 
 export function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed, expandedCategories, toggleCollapsed, toggleCategory } = useSidebarStore();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredFleetCategories = FLEET_CATEGORIES.map((cat) => ({
-    ...cat,
-    fleetNumbers: cat.fleetNumbers.filter((num) =>
-      num.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-  })).filter((cat) => cat.fleetNumbers.length > 0 || searchQuery === '');
+  const filteredFleetCategories = React.useMemo(
+    () =>
+      FLEET_CATEGORIES.map((cat) => ({
+        ...cat,
+        fleetNumbers: cat.fleetNumbers.filter((num) =>
+          num.toLowerCase().includes(searchQuery.toLowerCase())
+        ),
+      })).filter((cat) => cat.fleetNumbers.length > 0 || searchQuery === ''),
+    [searchQuery]
+  );
 
   return (
     <aside

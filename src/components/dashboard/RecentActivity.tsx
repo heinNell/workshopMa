@@ -1,10 +1,9 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { Card, CardHeader, CardTitle, Badge, StatusBadge } from '@/components/ui';
+import { Badge, Card, CardHeader, CardTitle } from '@/components/ui';
 import { formatDateTime } from '@/lib/utils';
-import { ChevronRight, AlertTriangle, CheckCircle, Clock, Wrench } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ChevronRight, Clock, Wrench } from 'lucide-react';
+import Link from 'next/link';
 
 interface Activity {
   id: string;

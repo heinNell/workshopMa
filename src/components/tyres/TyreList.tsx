@@ -1,12 +1,9 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { Card, Badge } from '@/components/ui';
-import { formatDate, formatCurrency } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-import { Circle, ChevronRight, RotateCcw, ArrowRightLeft, Trash2, Plus } from 'lucide-react';
+import { Badge, Card } from '@/components/ui';
+import { cn, formatDate } from '@/lib/utils';
 import type { Tyre, TyreHistory } from '@/types';
+import { ArrowRightLeft, ChevronRight, Circle, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 interface TyreListProps {
   tyres: Tyre[];

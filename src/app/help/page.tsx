@@ -1,20 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout';
-import { Card, CardHeader, CardTitle, CardDescription, Button, Input, Tabs, TabPanel } from '@/components/ui';
-import {
-  HelpCircle,
-  Book,
-  MessageCircle,
-  FileText,
-  Video,
-  Search,
-  ChevronRight,
-  ExternalLink,
-  Mail,
-  Phone,
-} from 'lucide-react';
+import { Button, Card, CardDescription, CardHeader, CardTitle, Input, TabPanel, Tabs } from '@/components/ui';
+import
+  {
+    Book,
+    ChevronRight,
+    ExternalLink,
+    FileText,
+    HelpCircle,
+    Mail,
+    MessageCircle,
+    Phone,
+    Search,
+    Video,
+  } from 'lucide-react';
+import { useState } from 'react';
 
 export default function HelpPage() {
   const [activeTab, setActiveTab] = useState('getting-started');
@@ -275,7 +276,7 @@ export default function HelpPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Submit a Request</CardTitle>
-                <CardDescription>We'll get back to you within 24 hours</CardDescription>
+                <CardDescription>We’ll get back to you within 24 hours</CardDescription>
               </CardHeader>
               <div className="space-y-4">
                 <Input label="Subject" placeholder="Brief description of your issue" />

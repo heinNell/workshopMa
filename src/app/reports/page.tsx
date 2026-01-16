@@ -1,23 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout';
-import { Card, CardHeader, CardTitle, CardDescription, Button, Tabs, TabPanel, Select } from '@/components/ui';
+import { Button, Card, CardDescription, CardHeader, CardTitle, Select, TabPanel, Tabs } from '@/components/ui';
 import { FLEET_CATEGORIES } from '@/lib/constants';
-import {
-  BarChart3,
-  Download,
-  Calendar,
-  Truck,
-  ClipboardCheck,
-  Wrench,
-  Circle,
-  Package,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  FileText,
-} from 'lucide-react';
+import
+  {
+    AlertTriangle,
+    BarChart3,
+    Calendar,
+    Circle,
+    ClipboardCheck,
+    Download,
+    Package,
+    TrendingDown,
+    TrendingUp,
+    Wrench,
+  } from 'lucide-react';
+import { useState } from 'react';
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('overview');

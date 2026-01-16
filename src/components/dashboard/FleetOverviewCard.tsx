@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { Card, CardHeader, CardTitle, StatusBadge } from '@/components/ui';
+import { Card, CardHeader, CardTitle } from '@/components/ui';
 import { FLEET_CATEGORIES, type FleetCategory } from '@/lib/constants';
-import { ChevronRight, Truck, Thermometer, Container, Car } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Car, ChevronRight, Container, Thermometer, Truck } from 'lucide-react';
+import Link from 'next/link';
+import React from 'react';
 
 interface FleetStats {
   category: FleetCategory;

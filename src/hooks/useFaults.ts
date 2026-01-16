@@ -1,9 +1,9 @@
 'use client';
 
-import { useSupabaseQuery } from './useSupabase';
 import { createClient } from '@/lib/supabase/client';
-import { useCallback, useEffect, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useCallback, useEffect, useState } from 'react';
+import { useSupabaseQuery } from './useSupabase';
 
 // Database row types
 export interface FaultRow {
@@ -30,7 +30,7 @@ export function useFaults(vehicleId?: string) {
   return useSupabaseQuery<FaultRow>('faults', {
     filter,
     orderBy: { column: 'created_at', ascending: false },
-    realtime: true,
+    realtime: false,
   });
 }
 

@@ -1,12 +1,9 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { Card, Badge, StatusBadge, DataTable } from '@/components/ui';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-import { ClipboardCheck, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Badge, Card } from '@/components/ui';
+import { cn, formatDate, formatDateTime } from '@/lib/utils';
 import type { Inspection } from '@/types';
+import { AlertTriangle, ChevronRight, ClipboardCheck } from 'lucide-react';
 
 interface InspectionListProps {
   inspections: Inspection[];
@@ -97,7 +94,7 @@ export function InspectionList({
                   <h4 className="font-medium text-white">
                     {getTypeLabel(inspection.inspectionType)} Inspection
                   </h4>
-                  <Badge variant={getStatusVariant(inspection.status) as any}>
+                  <Badge variant={getStatusVariant(inspection.status) as 'default' | 'success' | 'warning' | 'danger' | 'info'}>
                     {inspection.status.charAt(0).toUpperCase() + inspection.status.slice(1)}
                   </Badge>
                 </div>

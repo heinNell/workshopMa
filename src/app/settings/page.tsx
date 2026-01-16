@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout';
-import { Card, CardHeader, CardTitle, CardDescription, Button, Input, Tabs, TabPanel, Select } from '@/components/ui';
-import {
-  Settings,
-  User,
-  Bell,
-  Database,
-  Shield,
-  Palette,
-  Wrench,
-  Mail,
-  Save,
-  RefreshCw,
-} from 'lucide-react';
+import { Button, Card, CardDescription, CardHeader, CardTitle, Input, Select, TabPanel, Tabs } from '@/components/ui';
+import
+  {
+    Bell,
+    Database,
+    Palette,
+    RefreshCw,
+    Save,
+    Settings,
+    Shield,
+    User,
+    Wrench,
+  } from 'lucide-react';
+import { useState } from 'react';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');

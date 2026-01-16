@@ -1,9 +1,9 @@
 'use client';
 
-import { useSupabaseQuery } from './useSupabase';
 import { createClient } from '@/lib/supabase/client';
-import { useCallback, useEffect, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useCallback, useEffect, useState } from 'react';
+import { useSupabaseQuery } from './useSupabase';
 
 // Database row types (snake_case from PostgreSQL)
 export interface VehicleRow {
@@ -31,7 +31,7 @@ export function useVehicles(category?: string) {
   return useSupabaseQuery<VehicleRow>('vehicles', {
     filter,
     orderBy: { column: 'fleet_number', ascending: true },
-    realtime: true,
+    realtime: false,
   });
 }
 
@@ -49,12 +49,14 @@ export function useVehicleByFleetNumber(fleetNumber: string | null) {
       return;
     }
 
+    const normalized = fleetNumber.toUpperCase();
+
     try {
       setLoading(true);
       const { data: result, error: err } = await supabase
         .from('vehicles')
         .select('*')
-        .eq('fleet_number', fleetNumber.toUpperCase())
+        .ilike('fleet_number', normalized)
         .single();
 
       if (err) throw err;
@@ -86,7 +88,6 @@ export function useVehicleByFleetNumber(fleetNumber: string | null) {
             event: '*',
             schema: 'public',
             table: 'vehicles',
-            filter: `fleet_number=eq.${fleetNumber.toUpperCase()}`,
           },
           () => {
             fetchData();
