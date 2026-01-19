@@ -87,12 +87,12 @@ export default function VehicleDashboardPage() {
 
   // Fetch data from Supabase
   const { data: vehicleRow, loading: vehicleLoading, error: vehicleError } = useVehicleByFleetNumber(fleetNumber);
-  const { data: inspectionRows, loading: inspectionsLoading } = useInspectionsByFleetNumber(fleetNumber);
-  const { data: jobCardRows, loading: jobCardsLoading } = useJobCardsByFleetNumber(fleetNumber);
-  const { data: faultRows, loading: faultsLoading } = useFaultsByFleetNumber(fleetNumber);
+  const { data: inspectionRows, loading: inspectionsLoading, refetch: refetchInspections } = useInspectionsByFleetNumber(fleetNumber);
+  const { data: jobCardRows, loading: jobCardsLoading, refetch: refetchJobCards } = useJobCardsByFleetNumber(fleetNumber);
+  const { data: faultRows, loading: faultsLoading, refetch: refetchFaults } = useFaultsByFleetNumber(fleetNumber);
   const { data: tyreRows, loading: tyresLoading } = useTyresByFleetNumber(fleetNumber);
   const { data: tyreHistoryRows, loading: tyreHistoryLoading } = useTyreHistoryByFleetNumber(fleetNumber);
-  const { data: maintenanceRows, loading: maintenanceLoading } = useScheduledMaintenanceByFleetNumber(fleetNumber);
+  const { data: maintenanceRows, loading: maintenanceLoading, refetch: refetchMaintenance } = useScheduledMaintenanceByFleetNumber(fleetNumber);
 
   // Mutation hooks
   const { deleteFault, createFault, updateFault, loading: faultMutationLoading } = useFaultMutations();
@@ -611,6 +611,9 @@ export default function VehicleDashboardPage() {
                   const { error } = await deleteInspection(selectedInspection.id);
                   if (error) {
                     console.error('Error deleting inspection:', error);
+                  } else {
+                    // Manually refetch since real-time DELETE events don't trigger with filters
+                    refetchInspections();
                   }
                 }
                 setInspectionDeleteOpen(false);
@@ -834,6 +837,9 @@ export default function VehicleDashboardPage() {
                   const { error } = await deleteJobCard(selectedJobCard.id);
                   if (error) {
                     console.error('Error deleting job card:', error);
+                  } else {
+                    // Manually refetch since real-time DELETE events don't trigger with filters
+                    refetchJobCards();
                   }
                 }
                 setJobCardDeleteOpen(false);
@@ -1036,6 +1042,9 @@ export default function VehicleDashboardPage() {
                   const { error } = await deleteFault(selectedFault.id);
                   if (error) {
                     console.error('Error deleting fault:', error);
+                  } else {
+                    // Manually refetch since real-time DELETE events don't trigger with filters
+                    refetchFaults();
                   }
                 }
                 setFaultDeleteOpen(false);
@@ -1473,6 +1482,9 @@ export default function VehicleDashboardPage() {
                   const { error } = await deleteMaintenance(selectedMaintenance.id);
                   if (error) {
                     console.error('Error deleting maintenance:', error);
+                  } else {
+                    // Manually refetch since real-time DELETE events don't trigger with filters
+                    refetchMaintenance();
                   }
                 }
                 setMaintenanceDeleteOpen(false);
