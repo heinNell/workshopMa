@@ -1,7 +1,7 @@
 'use client';
 import { createClient } from '@/lib/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 // Generic hook for fetching data with real-time updates
 export function useSupabaseQuery<T>(
   table: string,
@@ -17,20 +17,26 @@ export function useSupabaseQuery<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const supabase = React.useMemo(() => createClient(), []);
+  
+  // Store options in a ref to avoid infinite loops
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+  
   const fetchData = useCallback(async () => {
+    const opts = optionsRef.current;
     try {
       setLoading(true);
-      let query = supabase.from(table).select(options?.select || '*');
-      if (options?.filter) {
-        query = query.eq(options.filter.column, options.filter.value);
+      let query = supabase.from(table).select(opts?.select || '*');
+      if (opts?.filter) {
+        query = query.eq(opts.filter.column, opts.filter.value);
       }
-      if (options?.orderBy) {
-        query = query.order(options.orderBy.column, {
-          ascending: options.orderBy.ascending ?? true,
+      if (opts?.orderBy) {
+        query = query.order(opts.orderBy.column, {
+          ascending: opts.orderBy.ascending ?? true,
         });
       }
-      if (options?.limit) {
-        query = query.limit(options.limit);
+      if (opts?.limit) {
+        query = query.limit(opts.limit);
       }
       const { data: result, error: err } = await query;
       if (err) throw err;
@@ -41,10 +47,12 @@ export function useSupabaseQuery<T>(
     } finally {
       setLoading(false);
     }
-  }, [supabase, table, options]);
+  }, [supabase, table]);
+  
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+  
   // Real-time subscription
   useEffect(() => {
     if (!options?.realtime) return;
@@ -72,6 +80,7 @@ export function useSupabaseQuery<T>(
       }
     };
   }, [table, options?.realtime, fetchData, supabase]);
+  
   return { data, loading, error, refetch: fetchData };
 }
 // Hook for a single record
