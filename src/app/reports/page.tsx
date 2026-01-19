@@ -2,19 +2,20 @@
 
 import { MainLayout } from '@/components/layout';
 import { Button, Card, CardDescription, CardHeader, CardTitle, Select, TabPanel, Tabs } from '@/components/ui';
+import { useInspectionStats } from '@/hooks/useInspections';
+import { useInventoryStats } from '@/hooks/useInventory';
+import { useJobCardStats } from '@/hooks/useJobCards';
+import { useTyreStats } from '@/hooks/useTyres';
 import { FLEET_CATEGORIES } from '@/lib/constants';
 import
   {
     AlertTriangle,
     BarChart3,
-    Calendar,
     Circle,
     ClipboardCheck,
-    Download,
-    Package,
-    TrendingDown,
+    Download, Loader2, Package,
     TrendingUp,
-    Wrench,
+    Wrench
   } from 'lucide-react';
 import { useState } from 'react';
 
@@ -22,6 +23,14 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [dateRange, setDateRange] = useState('30d');
   const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Fetch real stats from Supabase
+  const { data: inspectionStats, loading: inspectionsLoading } = useInspectionStats();
+  const { data: jobCardStats, loading: jobCardsLoading } = useJobCardStats();
+  const { data: tyreStats, loading: tyresLoading } = useTyreStats();
+  const { data: inventoryStats, loading: inventoryLoading } = useInventoryStats();
+
+  const isLoading = inspectionsLoading || jobCardsLoading || tyresLoading || inventoryLoading;
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -45,21 +54,15 @@ export default function ReportsPage() {
     ...FLEET_CATEGORIES.map((c) => ({ value: c.id, label: c.label })),
   ];
 
-  // Mock summary data
-  const summaryData = {
-    totalInspections: 156,
-    inspectionTrend: 12,
-    completedJobCards: 89,
-    jobCardTrend: -5,
-    tyresReplaced: 24,
-    tyreTrend: 8,
-    partsUsed: 342,
-    partsTrend: 15,
-    totalCost: 245890,
-    costTrend: -8,
-    avgRepairTime: 4.2,
-    repairTimeTrend: -12,
-  };
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -95,14 +98,9 @@ export default function ReportsPage() {
               <ClipboardCheck className="w-4 h-4" />
               Inspections
             </div>
-            <p className="text-2xl font-bold text-white mt-1">{summaryData.totalInspections}</p>
-            <div className={`flex items-center gap-1 text-sm mt-1 ${summaryData.inspectionTrend >= 0 ? 'text-success-500' : 'text-error-500'}`}>
-              {summaryData.inspectionTrend >= 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              {Math.abs(summaryData.inspectionTrend)}%
+            <p className="text-2xl font-bold text-white mt-1">{inspectionStats.total}</p>
+            <div className="flex items-center gap-1 text-sm mt-1 text-dark-400">
+              <span>{inspectionStats.completed} completed</span>
             </div>
           </Card>
 
@@ -111,78 +109,55 @@ export default function ReportsPage() {
               <Wrench className="w-4 h-4" />
               Job Cards
             </div>
-            <p className="text-2xl font-bold text-white mt-1">{summaryData.completedJobCards}</p>
-            <div className={`flex items-center gap-1 text-sm mt-1 ${summaryData.jobCardTrend >= 0 ? 'text-success-500' : 'text-error-500'}`}>
-              {summaryData.jobCardTrend >= 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              {Math.abs(summaryData.jobCardTrend)}%
+            <p className="text-2xl font-bold text-white mt-1">{jobCardStats.total}</p>
+            <div className="flex items-center gap-1 text-sm mt-1 text-dark-400">
+              <span>{jobCardStats.completed} completed</span>
             </div>
           </Card>
 
           <Card>
             <div className="flex items-center gap-2 text-dark-400 text-sm">
               <Circle className="w-4 h-4" />
-              Tyres Replaced
+              Tyres
             </div>
-            <p className="text-2xl font-bold text-white mt-1">{summaryData.tyresReplaced}</p>
-            <div className={`flex items-center gap-1 text-sm mt-1 ${summaryData.tyreTrend >= 0 ? 'text-success-500' : 'text-error-500'}`}>
-              {summaryData.tyreTrend >= 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              {Math.abs(summaryData.tyreTrend)}%
+            <p className="text-2xl font-bold text-white mt-1">{tyreStats.total}</p>
+            <div className={`flex items-center gap-1 text-sm mt-1 ${tyreStats.needsReplacement > 0 ? 'text-warning-500' : 'text-dark-400'}`}>
+              <span>{tyreStats.needsReplacement} need replacement</span>
             </div>
           </Card>
 
           <Card>
             <div className="flex items-center gap-2 text-dark-400 text-sm">
               <Package className="w-4 h-4" />
-              Parts Used
+              Inventory Items
             </div>
-            <p className="text-2xl font-bold text-white mt-1">{summaryData.partsUsed}</p>
-            <div className={`flex items-center gap-1 text-sm mt-1 ${summaryData.partsTrend >= 0 ? 'text-success-500' : 'text-error-500'}`}>
-              {summaryData.partsTrend >= 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              {Math.abs(summaryData.partsTrend)}%
+            <p className="text-2xl font-bold text-white mt-1">{inventoryStats.totalItems}</p>
+            <div className={`flex items-center gap-1 text-sm mt-1 ${inventoryStats.lowStock > 0 ? 'text-warning-500' : 'text-dark-400'}`}>
+              <span>{inventoryStats.lowStock} low stock</span>
             </div>
           </Card>
 
           <Card>
             <div className="flex items-center gap-2 text-dark-400 text-sm">
               <TrendingUp className="w-4 h-4" />
-              Total Cost
+              Inventory Value
             </div>
-            <p className="text-2xl font-bold text-white mt-1">R{(summaryData.totalCost / 1000).toFixed(0)}k</p>
-            <div className={`flex items-center gap-1 text-sm mt-1 ${summaryData.costTrend <= 0 ? 'text-success-500' : 'text-error-500'}`}>
-              {summaryData.costTrend <= 0 ? (
-                <TrendingDown className="w-3 h-3" />
-              ) : (
-                <TrendingUp className="w-3 h-3" />
-              )}
-              {Math.abs(summaryData.costTrend)}%
+            <p className="text-2xl font-bold text-white mt-1">R{(inventoryStats.totalValue / 1000).toFixed(0)}k</p>
+            <div className="flex items-center gap-1 text-sm mt-1 text-dark-400">
+              <span>{inventoryStats.categories} categories</span>
             </div>
           </Card>
 
-          <Card>
+          <Card className={inspectionStats.overdue > 0 ? 'border-warning-500/20' : ''}>
             <div className="flex items-center gap-2 text-dark-400 text-sm">
-              <Calendar className="w-4 h-4" />
-              Avg Repair Time
+              <AlertTriangle className="w-4 h-4" />
+              Overdue
             </div>
-            <p className="text-2xl font-bold text-white mt-1">{summaryData.avgRepairTime}h</p>
-            <div className={`flex items-center gap-1 text-sm mt-1 ${summaryData.repairTimeTrend <= 0 ? 'text-success-500' : 'text-error-500'}`}>
-              {summaryData.repairTimeTrend <= 0 ? (
-                <TrendingDown className="w-3 h-3" />
-              ) : (
-                <TrendingUp className="w-3 h-3" />
-              )}
-              {Math.abs(summaryData.repairTimeTrend)}%
+            <p className={`text-2xl font-bold mt-1 ${inspectionStats.overdue > 0 ? 'text-warning-500' : 'text-white'}`}>
+              {inspectionStats.overdue}
+            </p>
+            <div className="flex items-center gap-1 text-sm mt-1 text-dark-400">
+              <span>inspections overdue</span>
             </div>
           </Card>
         </div>
@@ -264,7 +239,7 @@ export default function ReportsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Activity Summary</CardTitle>
-                <CardDescription>Last 30 days activity breakdown</CardDescription>
+                <CardDescription>Current status breakdown</CardDescription>
               </CardHeader>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-lg bg-dark-800/50 border border-primary-500/10">
@@ -275,11 +250,11 @@ export default function ReportsPage() {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <p className="text-dark-400">Completed</p>
-                      <p className="text-white font-semibold">142</p>
+                      <p className="text-white font-semibold">{inspectionStats.completed}</p>
                     </div>
                     <div>
                       <p className="text-dark-400">Overdue</p>
-                      <p className="text-warning-500 font-semibold">3</p>
+                      <p className={`font-semibold ${inspectionStats.overdue > 0 ? 'text-warning-500' : 'text-success-500'}`}>{inspectionStats.overdue}</p>
                     </div>
                   </div>
                 </div>
@@ -292,28 +267,28 @@ export default function ReportsPage() {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <p className="text-dark-400">Completed</p>
-                      <p className="text-white font-semibold">89</p>
+                      <p className="text-white font-semibold">{jobCardStats.completed}</p>
                     </div>
                     <div>
                       <p className="text-dark-400">In Progress</p>
-                      <p className="text-primary-400 font-semibold">12</p>
+                      <p className="text-primary-400 font-semibold">{jobCardStats.inProgress}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="p-4 rounded-lg bg-dark-800/50 border border-primary-500/10">
                   <div className="flex items-center gap-2 text-dark-400 text-sm mb-2">
-                    <AlertTriangle className="w-4 h-4" />
-                    Faults
+                    <Circle className="w-4 h-4" />
+                    Tyres
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
-                      <p className="text-dark-400">Reported</p>
-                      <p className="text-white font-semibold">28</p>
+                      <p className="text-dark-400">In Use</p>
+                      <p className="text-white font-semibold">{tyreStats.inUse}</p>
                     </div>
                     <div>
-                      <p className="text-dark-400">Resolved</p>
-                      <p className="text-success-500 font-semibold">25</p>
+                      <p className="text-dark-400">In Stock</p>
+                      <p className="text-success-500 font-semibold">{tyreStats.inStock}</p>
                     </div>
                   </div>
                 </div>
@@ -325,12 +300,12 @@ export default function ReportsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
-                      <p className="text-dark-400">Items Used</p>
-                      <p className="text-white font-semibold">342</p>
+                      <p className="text-dark-400">Total Items</p>
+                      <p className="text-white font-semibold">{inventoryStats.totalItems}</p>
                     </div>
                     <div>
                       <p className="text-dark-400">Low Stock</p>
-                      <p className="text-warning-500 font-semibold">5</p>
+                      <p className={`font-semibold ${inventoryStats.lowStock > 0 ? 'text-warning-500' : 'text-success-500'}`}>{inventoryStats.lowStock}</p>
                     </div>
                   </div>
                 </div>
