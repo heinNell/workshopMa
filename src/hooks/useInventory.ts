@@ -1,9 +1,9 @@
 'use client';
 
-import { useSupabaseQuery } from './useSupabase';
 import { createClient } from '@/lib/supabase/client';
-import { useCallback, useEffect, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useCallback, useEffect, useState } from 'react';
+import { useSupabaseQuery } from './useSupabase';
 
 // Database row types
 export interface InventoryItemRow {
@@ -21,6 +21,19 @@ export interface InventoryItemRow {
   last_used: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Input type for creating/updating inventory items
+export interface InventoryItemInput {
+  part_number: string;
+  name: string;
+  description?: string | null;
+  category: string;
+  quantity_in_stock: number;
+  minimum_stock: number;
+  unit_price: number;
+  supplier?: string | null;
+  location?: string | null;
 }
 
 // Hook to fetch all inventory items
@@ -100,7 +113,7 @@ export function useLowStockItems() {
     };
   }, [fetchData, supabase]);
 
-  return { data, loading, error, refetch: fetchData };
+  return { data, loading, refetch: fetchData };
 }
 
 // Hook to get inventory statistics
@@ -148,4 +161,45 @@ export function useInventoryStats() {
   }, [fetchData]);
 
   return { data, loading, refetch: fetchData };
+}
+
+// Create a new inventory item
+export async function createInventoryItem(input: InventoryItemInput): Promise<InventoryItemRow> {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('inventory_items')
+    .insert(input)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as InventoryItemRow;
+}
+
+// Update an existing inventory item
+export async function updateInventoryItem(id: string, input: Partial<InventoryItemInput>): Promise<InventoryItemRow> {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('inventory_items')
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as InventoryItemRow;
+}
+
+// Delete an inventory item
+export async function deleteInventoryItem(id: string): Promise<void> {
+  const supabase = createClient();
+  
+  const { error } = await supabase
+    .from('inventory_items')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
 }

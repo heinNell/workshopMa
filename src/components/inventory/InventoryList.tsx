@@ -3,13 +3,15 @@
 import { Badge, Button, Card, Input, Select } from '@/components/ui';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { InventoryItem } from '@/types';
-import { AlertTriangle, Package, Plus, Search, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Package, Pencil, Plus, Search, Trash2, TrendingDown, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 
 interface InventoryListProps {
   items: InventoryItem[];
   onItemClick?: (item: InventoryItem) => void;
   onAddItem?: () => void;
+  onEditItem?: (item: InventoryItem) => void;
+  onDeleteItem?: (item: InventoryItem) => void;
   className?: string;
 }
 
@@ -17,6 +19,8 @@ export function InventoryList({
   items,
   onItemClick,
   onAddItem,
+  onEditItem,
+  onDeleteItem,
   className,
 }: InventoryListProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -179,6 +183,11 @@ export function InventoryList({
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-dark-400">
                     Location
                   </th>
+                  {(onEditItem || onDeleteItem) && (
+                    <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-dark-400">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -247,6 +256,37 @@ export function InventoryList({
                           {item.location || '-'}
                         </span>
                       </td>
+                      {(onEditItem || onDeleteItem) && (
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            {onEditItem && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEditItem(item);
+                                }}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {onDeleteItem && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteItem(item);
+                                }}
+                                className="text-danger-500 hover:text-danger-400 hover:bg-danger-500/10"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

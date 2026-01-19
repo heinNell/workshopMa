@@ -1,19 +1,85 @@
 'use client';
 
-import { InventoryList } from '@/components/inventory';
+import type { InventoryFormData } from '@/components/inventory';
+import { InventoryFormModal, InventoryList } from '@/components/inventory';
 import { MainLayout } from '@/components/layout';
-import { useInventory } from '@/hooks/useInventory';
+import { Button, Modal } from '@/components/ui';
+import
+  {
+    createInventoryItem,
+    deleteInventoryItem,
+    updateInventoryItem,
+    useInventory
+  } from '@/hooks/useInventory';
 import { transformInventoryItem } from '@/lib/transforms';
 import type { InventoryItem } from '@/types';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 export default function InventoryPage() {
-  const { data, loading, error } = useInventory();
+  const { data, loading, error, refetch } = useInventory();
+  
+  // Modal states
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   const items: InventoryItem[] = useMemo(
     () => data.map((row) => transformInventoryItem(row)),
     [data]
   );
+
+  // Handle create
+  const handleAddItem = () => {
+    setSelectedItem(null);
+    setFormMode('create');
+    setIsFormModalOpen(true);
+  };
+
+  // Handle edit
+  const handleEditItem = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setFormMode('edit');
+    setIsFormModalOpen(true);
+  };
+
+  // Handle delete click
+  const handleDeleteClick = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Handle form submit
+  const handleFormSubmit = async (formData: InventoryFormData) => {
+    const input = {
+      part_number: formData.partNumber,
+      name: formData.name,
+      description: formData.description || null,
+      category: formData.category,
+      quantity_in_stock: formData.quantityInStock,
+      minimum_stock: formData.minimumStock,
+      unit_price: formData.unitPrice,
+      supplier: formData.supplier || null,
+      location: formData.location || null,
+    };
+
+    if (formMode === 'create') {
+      await createInventoryItem(input);
+    } else if (selectedItem) {
+      await updateInventoryItem(selectedItem.id, input);
+    }
+    refetch();
+  };
+
+  // Handle delete confirm
+  const handleDeleteConfirm = async () => {
+    if (selectedItem) {
+      await deleteInventoryItem(selectedItem.id);
+      refetch();
+    }
+    setIsDeleteModalOpen(false);
+    setSelectedItem(null);
+  };
 
   return (
     <MainLayout>
@@ -32,11 +98,43 @@ export default function InventoryPage() {
         ) : (
           <InventoryList
             items={items}
-            onItemClick={(item) => console.log('Clicked:', item)}
-            onAddItem={() => console.log('Add item clicked')}
+            onItemClick={(item) => handleEditItem(item)}
+            onAddItem={handleAddItem}
+            onEditItem={handleEditItem}
+            onDeleteItem={handleDeleteClick}
           />
         )}
       </div>
+
+      {/* Form Modal */}
+      <InventoryFormModal
+        isOpen={isFormModalOpen}
+        onClose={() => setIsFormModalOpen(false)}
+        onSubmit={handleFormSubmit}
+        item={selectedItem}
+        mode={formMode}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Delete Inventory Item"
+      >
+        <div className="space-y-4">
+          <p className="text-dark-300">
+            Are you sure you want to delete <span className="text-white font-medium">{selectedItem?.name}</span>? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDeleteConfirm}>
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </MainLayout>
   );
 }
