@@ -2,99 +2,13 @@
 
 import { MainLayout } from '@/components/layout';
 import { Badge, Button, Card, CardHeader, Tabs } from '@/components/ui';
+import { useTyres, type TyreRow } from '@/hooks/useTyres';
+import { transformTyre } from '@/lib/transforms';
 import { cn } from '@/lib/utils';
 import type { Tyre } from '@/types';
-import { ArrowRight, Circle, ExternalLink, Filter, RotateCcw } from 'lucide-react';
+import { ArrowRight, Circle, ExternalLink, Filter, Loader2, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
-
-// Mock data - In production, this would come from Supabase
-const mockTyres: Tyre[] = [
-  {
-    id: '1',
-    serialNumber: 'TYR-2024-001',
-    vehicleId: 'v1',
-    fleetNumber: '21H',
-    position: 'FL',
-    brand: 'Michelin',
-    model: 'X Multi D',
-    size: '315/80R22.5',
-    condition: 'good',
-    treadDepth: 12.5,
-    currentMileage: 45000,
-    status: 'in-use',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '2',
-    serialNumber: 'TYR-2024-002',
-    vehicleId: 'v1',
-    fleetNumber: '21H',
-    position: 'FR',
-    brand: 'Michelin',
-    model: 'X Multi D',
-    size: '315/80R22.5',
-    condition: 'good',
-    treadDepth: 11.8,
-    currentMileage: 45000,
-    status: 'in-use',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '3',
-    serialNumber: 'TYR-2024-015',
-    vehicleId: 'v2',
-    fleetNumber: '32H',
-    position: 'RLO',
-    brand: 'Bridgestone',
-    model: 'R168',
-    size: '315/80R22.5',
-    condition: 'worn',
-    treadDepth: 4.2,
-    currentMileage: 120000,
-    status: 'in-use',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '4',
-    serialNumber: 'TYR-2024-022',
-    brand: 'Goodyear',
-    model: 'KMAX S',
-    size: '315/80R22.5',
-    condition: 'new',
-    treadDepth: 18.0,
-    status: 'in-stock',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '5',
-    serialNumber: 'TYR-2023-089',
-    brand: 'Continental',
-    model: 'HDL2',
-    size: '315/80R22.5',
-    condition: 'fair',
-    treadDepth: 8.5,
-    status: 'retreading',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '6',
-    serialNumber: 'TYR-2024-030',
-    brand: 'Michelin',
-    model: 'X Multi D',
-    size: '315/80R22.5',
-    condition: 'new',
-    treadDepth: 18.0,
-    status: 'in-stock',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+import { useMemo, useState } from 'react';
 
 const conditionConfig = {
   new: { label: 'New', variant: 'success' as const },
@@ -123,7 +37,15 @@ function getFleetCategory(fleetNumber: string): string {
 
 export default function TyresPage() {
   const [activeTab, setActiveTab] = useState('all');
-  const tyres = mockTyres;
+  
+  // Fetch all tyres from Supabase
+  const { data: tyreRows, loading, error, refetch } = useTyres();
+
+  // Transform database rows to frontend types
+  const tyres = useMemo(() => 
+    (tyreRows as TyreRow[]).map(transformTyre), 
+    [tyreRows]
+  );
 
   const tabs = [
     { id: 'all', label: 'All Tyres', count: tyres.length },
@@ -137,14 +59,40 @@ export default function TyresPage() {
     : tyres.filter(t => t.status === activeTab);
 
   const needsAttention = tyres.filter(t => t.condition === 'worn' || t.condition === 'replace').length;
+  const goodConditionCount = tyres.filter(t => t.condition === 'new' || t.condition === 'good').length;
+  const retreadingCount = tyres.filter(t => t.status === 'retreading').length;
+  const inStockCount = tyres.filter(t => t.status === 'in-stock').length;
 
   // Group tyres by fleet for summary
-  const tyresByFleet = tyres.reduce((acc, tyre) => {
+  const tyresByFleet = useMemo(() => tyres.reduce((acc, tyre) => {
     const fleet = tyre.fleetNumber || 'Unallocated';
     if (!acc[fleet]) acc[fleet] = [];
     acc[fleet].push(tyre);
     return acc;
-  }, {} as Record<string, Tyre[]>);
+  }, {} as Record<string, Tyre[]>), [tyres]);
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="text-center py-12">
+          <p className="text-danger-400">Error loading tyres: {error.message}</p>
+          <Button onClick={() => refetch()} className="mt-4">
+            Try Again
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -198,9 +146,7 @@ export default function TyresPage() {
               </div>
               <div>
                 <p className="text-sm text-dark-400">Good Condition</p>
-                <p className="text-xl font-bold text-white">
-                  {tyres.filter(t => t.condition === 'new' || t.condition === 'good').length}
-                </p>
+                <p className="text-xl font-bold text-white">{goodConditionCount}</p>
               </div>
             </div>
           </Card>
@@ -222,9 +168,7 @@ export default function TyresPage() {
               </div>
               <div>
                 <p className="text-sm text-dark-400">At Retreader</p>
-                <p className="text-xl font-bold text-white">
-                  {tyres.filter(t => t.status === 'retreading').length}
-                </p>
+                <p className="text-xl font-bold text-white">{retreadingCount}</p>
               </div>
             </div>
           </Card>
@@ -235,9 +179,7 @@ export default function TyresPage() {
               </div>
               <div>
                 <p className="text-sm text-dark-400">In Stock</p>
-                <p className="text-xl font-bold text-white">
-                  {tyres.filter(t => t.status === 'in-stock').length}
-                </p>
+                <p className="text-xl font-bold text-white">{inStockCount}</p>
               </div>
             </div>
           </Card>

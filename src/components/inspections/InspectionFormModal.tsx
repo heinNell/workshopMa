@@ -1,4 +1,4 @@
-import { Button, Input, Modal, Select, Textarea, DatePicker } from '@/components/ui';
+import { Button, DatePicker, Input, Modal, Select, Textarea } from '@/components/ui';
 import type { Inspection } from '@/types';
 import { ClipboardCheck } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -11,6 +11,10 @@ interface InspectionFormModalProps {
   mode: 'create' | 'edit';
   fleetNumber: string;
   loading?: boolean;
+  // Optional: for creating inspections from main page with vehicle selection
+  vehicleOptions?: { value: string; label: string }[];
+  onFleetNumberChange?: (fleetNumber: string) => void;
+  showVehicleSelect?: boolean;
 }
 
 const inspectionTypeOptions = [
@@ -44,6 +48,9 @@ export function InspectionFormModal({
   mode,
   fleetNumber,
   loading = false,
+  vehicleOptions = [],
+  onFleetNumberChange,
+  showVehicleSelect = false,
 }: InspectionFormModalProps) {
   const [formData, setFormData] = useState<FormData>({
     inspectionType: 'daily',
@@ -101,13 +108,25 @@ export function InspectionFormModal({
             <h2 className="text-lg font-semibold text-white">
               {mode === 'create' ? 'Schedule Inspection' : 'Edit Inspection'}
             </h2>
-            <p className="text-sm text-dark-400">Fleet: {fleetNumber}</p>
+            {!showVehicleSelect && (
+              <p className="text-sm text-dark-400">Fleet: {fleetNumber}</p>
+            )}
           </div>
         </div>
       }
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Vehicle Selection (only shown when creating from main page) */}
+        {showVehicleSelect && vehicleOptions.length > 0 && (
+          <Select
+            label="Select Vehicle *"
+            options={vehicleOptions}
+            value={fleetNumber}
+            onChange={(e) => onFleetNumberChange?.(e.target.value)}
+          />
+        )}
+
         <div className="space-y-3">
           <h3 className="text-xs font-medium text-dark-300 uppercase tracking-wider">
             Inspection Details

@@ -13,6 +13,10 @@ interface JobCardFormModalProps {
   mode: 'create' | 'edit';
   fleetNumber: string;
   loading?: boolean;
+  // Optional: for creating job cards from main page with vehicle selection
+  vehicleOptions?: { value: string; label: string }[];
+  onFleetNumberChange?: (fleetNumber: string) => void;
+  showVehicleSelect?: boolean;
 }
 
 const jobTypeOptions = [
@@ -57,6 +61,9 @@ export function JobCardFormModal({
   mode,
   fleetNumber,
   loading = false,
+  vehicleOptions = [],
+  onFleetNumberChange,
+  showVehicleSelect = false,
 }: JobCardFormModalProps) {
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -112,7 +119,7 @@ export function JobCardFormModal({
     });
   };
 
-  const isValid = formData.title.trim() !== '' && formData.description.trim() !== '';
+  const isValid = formData.title.trim() !== '' && formData.description.trim() !== '' && (!showVehicleSelect || fleetNumber !== '');
 
   return (
     <Modal
@@ -127,13 +134,25 @@ export function JobCardFormModal({
             <h2 className="text-base font-semibold text-white">
               {mode === 'create' ? 'Create Job Card' : 'Edit Job Card'}
             </h2>
-            <p className="text-xs text-dark-400">Fleet: {fleetNumber}</p>
+            {!showVehicleSelect && (
+              <p className="text-xs text-dark-400">Fleet: {fleetNumber}</p>
+            )}
           </div>
         </div>
       }
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Vehicle Selection (only shown when creating from main page) */}
+        {showVehicleSelect && vehicleOptions.length > 0 && (
+          <Select
+            label="Select Vehicle *"
+            options={vehicleOptions}
+            value={fleetNumber}
+            onChange={(e) => onFleetNumberChange?.(e.target.value)}
+          />
+        )}
+
         {/* Basic Info */}
         <Input
           label="Job Title *"
