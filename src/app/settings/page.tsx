@@ -1,6 +1,7 @@
 'use client';
 
 import { MainLayout } from '@/components/layout';
+import { useAppearance } from '@/components/providers';
 import { Button, Card, CardDescription, CardHeader, CardTitle, Input, Select, TabPanel, Tabs } from '@/components/ui';
 import
   {
@@ -18,6 +19,7 @@ import { useState } from 'react';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
+  const { settings, updateSettings, resetSettings } = useAppearance();
 
   const tabs = [
     { id: 'general', label: 'General', icon: Settings },
@@ -220,6 +222,8 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <Select
                   label="Theme"
+                  value={settings.theme}
+                  onChange={(e) => updateSettings({ theme: e.target.value as 'dark' | 'light' | 'system' })}
                   options={[
                     { value: 'dark', label: 'Dark (Default)' },
                     { value: 'light', label: 'Light' },
@@ -228,6 +232,8 @@ export default function SettingsPage() {
                 />
                 <Select
                   label="Accent Color"
+                  value={settings.accentColor}
+                  onChange={(e) => updateSettings({ accentColor: e.target.value as 'blue' | 'green' | 'purple' | 'orange' })}
                   options={[
                     { value: 'blue', label: 'Blue (Default)' },
                     { value: 'green', label: 'Green' },
@@ -235,6 +241,16 @@ export default function SettingsPage() {
                     { value: 'orange', label: 'Orange' },
                   ]}
                 />
+                
+                {/* Color preview */}
+                <div className="flex items-center gap-3 pt-2">
+                  <span className="text-sm text-dark-400">Preview:</span>
+                  <div 
+                    className="w-8 h-8 rounded-lg" 
+                    style={{ backgroundColor: `rgb(var(--primary-rgb))` }}
+                  />
+                  <span className="text-sm text-white">Primary Color</span>
+                </div>
               </div>
             </Card>
 
@@ -244,24 +260,65 @@ export default function SettingsPage() {
                 <CardDescription>Configure display preferences</CardDescription>
               </CardHeader>
               <div className="space-y-4">
-                {[
-                  { id: 'sidebar-collapsed', label: 'Start with Sidebar Collapsed', description: 'Sidebar will be collapsed by default' },
-                  { id: 'animations', label: 'Enable Animations', description: 'Show animations and transitions' },
-                  { id: 'compact-mode', label: 'Compact Mode', description: 'Use smaller spacing and fonts' },
-                ].map((option) => (
-                  <div key={option.id} className="flex items-center justify-between p-4 rounded-lg bg-dark-800/50 border border-primary-500/10">
-                    <div>
-                      <p className="text-white font-medium">{option.label}</p>
-                      <p className="text-sm text-dark-400">{option.description}</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" />
-                      <div className="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
-                    </label>
+                <div className="flex items-center justify-between p-4 rounded-lg bg-dark-800/50 border border-primary-500/10">
+                  <div>
+                    <p className="text-white font-medium">Start with Sidebar Collapsed</p>
+                    <p className="text-sm text-dark-400">Sidebar will be collapsed by default</p>
                   </div>
-                ))}
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={settings.sidebarCollapsed}
+                      onChange={(e) => updateSettings({ sidebarCollapsed: e.target.checked })}
+                      className="sr-only peer" 
+                    />
+                    <div className="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                  </label>
+                </div>
+                
+                <div className="flex items-center justify-between p-4 rounded-lg bg-dark-800/50 border border-primary-500/10">
+                  <div>
+                    <p className="text-white font-medium">Enable Animations</p>
+                    <p className="text-sm text-dark-400">Show animations and transitions</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={settings.animationsEnabled}
+                      onChange={(e) => updateSettings({ animationsEnabled: e.target.checked })}
+                      className="sr-only peer" 
+                    />
+                    <div className="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                  </label>
+                </div>
+                
+                <div className="flex items-center justify-between p-4 rounded-lg bg-dark-800/50 border border-primary-500/10">
+                  <div>
+                    <p className="text-white font-medium">Compact Mode</p>
+                    <p className="text-sm text-dark-400">Use smaller spacing and fonts</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={settings.compactMode}
+                      onChange={(e) => updateSettings({ compactMode: e.target.checked })}
+                      className="sr-only peer" 
+                    />
+                    <div className="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                  </label>
+                </div>
               </div>
             </Card>
+            
+            <div className="flex justify-between">
+              <Button variant="ghost" onClick={resetSettings}>
+                Reset to Defaults
+              </Button>
+              <div className="text-sm text-dark-400 flex items-center">
+                <span className="w-2 h-2 bg-success-500 rounded-full mr-2"></span>
+                Settings are saved automatically
+              </div>
+            </div>
           </div>
         </TabPanel>
 

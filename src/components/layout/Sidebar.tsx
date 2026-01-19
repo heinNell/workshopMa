@@ -6,13 +6,28 @@ import { useSidebarStore } from '@/store';
 import { ChevronDown, ChevronRight, HelpCircle, PanelLeft, PanelLeftClose, Search, Settings, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavIcon } from './SidebarIcons';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { isCollapsed, expandedCategories, toggleCollapsed, toggleCategory } = useSidebarStore();
+  const { isCollapsed, expandedCategories, toggleCollapsed, toggleCategory, setCollapsed } = useSidebarStore();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Check for appearance settings on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('workshop-appearance-settings');
+    if (stored) {
+      try {
+        const settings = JSON.parse(stored);
+        if (settings.sidebarCollapsed && !isCollapsed) {
+          setCollapsed(true);
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }, [setCollapsed, isCollapsed]);
 
   const filteredFleetCategories = React.useMemo(
     () =>
