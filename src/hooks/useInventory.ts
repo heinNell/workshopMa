@@ -113,7 +113,7 @@ export function useLowStockItems() {
     };
   }, [fetchData, supabase]);
 
-  return { data, loading, refetch: fetchData };
+  return { data, loading, error, refetch: fetchData };
 }
 
 // Hook to get inventory statistics
