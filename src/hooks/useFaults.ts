@@ -149,3 +149,78 @@ export function useFaultStats() {
 
   return { data, loading, refetch: fetchData };
 }
+
+// Mutation hooks for faults
+export function useFaultMutations() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const supabase = createClient();
+
+  const createFault = useCallback(async (fault: Partial<FaultRow>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('faults')
+        .insert([fault])
+        .select()
+        .single();
+
+      if (err) throw err;
+      return { data, error: null };
+    } catch (err) {
+      setError(err as Error);
+      return { data: null, error: err as Error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const updateFault = useCallback(async (id: string, updates: Partial<FaultRow>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('faults')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (err) throw err;
+      return { data, error: null };
+    } catch (err) {
+      setError(err as Error);
+      return { data: null, error: err as Error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const deleteFault = useCallback(async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error: err } = await supabase
+        .from('faults')
+        .delete()
+        .eq('id', id);
+
+      if (err) throw err;
+      return { success: true, error: null };
+    } catch (err) {
+      setError(err as Error);
+      return { success: false, error: err as Error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  return {
+    createFault,
+    updateFault,
+    deleteFault,
+    loading,
+    error,
+  };
+}

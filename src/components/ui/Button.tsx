@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
 import { cn } from '@/lib/utils';
+import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -34,9 +34,9 @@ export function Button({
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base',
+    sm: 'px-2.5 py-1 text-xs',
+    md: 'px-3 py-1.5 text-sm',
+    lg: 'px-4 py-2 text-sm',
   };
 
   return (

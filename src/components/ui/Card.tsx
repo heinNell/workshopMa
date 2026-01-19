@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
 import { cn } from '@/lib/utils';
+import React from 'react';
 
 interface CardProps {
   className?: string;
@@ -14,7 +14,7 @@ export function Card({ className, children, hover = true, glow = false }: CardPr
   return (
     <div
       className={cn(
-        'bg-dark-900/70 backdrop-blur-xl border border-primary-500/10 rounded-xl p-6',
+        'bg-dark-900/70 backdrop-blur-xl border border-primary-500/10 rounded-xl p-4',
         'transition-all duration-300',
         hover && 'hover:border-primary-500/25 hover:shadow-card-hover',
         glow && 'shadow-glow',
@@ -33,7 +33,7 @@ interface CardHeaderProps {
 
 export function CardHeader({ className, children }: CardHeaderProps) {
   return (
-    <div className={cn('flex items-center justify-between mb-4', className)}>
+    <div className={cn('flex items-center justify-between mb-3', className)}>
       {children}
     </div>
   );
@@ -46,7 +46,7 @@ interface CardTitleProps {
 
 export function CardTitle({ className, children }: CardTitleProps) {
   return (
-    <h3 className={cn('text-lg font-semibold text-white', className)}>
+    <h3 className={cn('text-base font-semibold text-white', className)}>
       {children}
     </h3>
   );

@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
 import { cn } from '@/lib/utils';
+import React from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -24,7 +24,7 @@ export function Input({
       {label && (
         <label
           htmlFor={inputId}
-          className="block text-sm font-medium text-dark-200 mb-1.5"
+          className="block text-xs font-medium text-dark-300 mb-1"
         >
           {label}
         </label>
@@ -32,7 +32,7 @@ export function Input({
       <input
         id={inputId}
         className={cn(
-          'w-full bg-dark-900/80 border border-primary-500/20 rounded-lg px-4 py-2.5',
+          'w-full bg-dark-900/80 border border-primary-500/20 rounded-lg px-3 py-2',
           'text-sm text-white placeholder:text-dark-500',
           'focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20',
           'transition-all duration-200',
@@ -42,10 +42,10 @@ export function Input({
         {...props}
       />
       {error && (
-        <p className="mt-1.5 text-xs text-danger-500">{error}</p>
+        <p className="mt-1 text-[10px] text-danger-500">{error}</p>
       )}
       {helperText && !error && (
-        <p className="mt-1.5 text-xs text-dark-400">{helperText}</p>
+        <p className="mt-1 text-[10px] text-dark-400">{helperText}</p>
       )}
     </div>
   );
@@ -72,7 +72,7 @@ export function Textarea({
       {label && (
         <label
           htmlFor={textareaId}
-          className="block text-sm font-medium text-dark-200 mb-1.5"
+          className="block text-xs font-medium text-dark-300 mb-1"
         >
           {label}
         </label>
@@ -80,7 +80,7 @@ export function Textarea({
       <textarea
         id={textareaId}
         className={cn(
-          'w-full bg-dark-900/80 border border-primary-500/20 rounded-lg px-4 py-2.5',
+          'w-full bg-dark-900/80 border border-primary-500/20 rounded-lg px-3 py-2',
           'text-sm text-white placeholder:text-dark-500',
           'focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20',
           'transition-all duration-200 resize-none',
@@ -90,10 +90,10 @@ export function Textarea({
         {...props}
       />
       {error && (
-        <p className="mt-1.5 text-xs text-danger-500">{error}</p>
+        <p className="mt-1 text-[10px] text-danger-500">{error}</p>
       )}
       {helperText && !error && (
-        <p className="mt-1.5 text-xs text-dark-400">{helperText}</p>
+        <p className="mt-1 text-[10px] text-dark-400">{helperText}</p>
       )}
     </div>
   );
@@ -104,6 +104,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
   helperText?: string;
   options: Array<{ value: string; label: string }>;
+  placeholder?: string;
 }
 
 export function Select({
@@ -111,6 +112,7 @@ export function Select({
   error,
   helperText,
   options,
+  placeholder,
   className,
   id,
   ...props
@@ -122,7 +124,7 @@ export function Select({
       {label && (
         <label
           htmlFor={selectId}
-          className="block text-sm font-medium text-dark-200 mb-1.5"
+          className="block text-xs font-medium text-dark-300 mb-1"
         >
           {label}
         </label>
@@ -130,7 +132,7 @@ export function Select({
       <select
         id={selectId}
         className={cn(
-          'w-full bg-dark-900/80 border border-primary-500/20 rounded-lg px-4 py-2.5',
+          'w-full bg-dark-900/80 border border-primary-500/20 rounded-lg px-3 py-2',
           'text-sm text-white',
           'focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20',
           'transition-all duration-200 cursor-pointer',
@@ -139,6 +141,11 @@ export function Select({
         )}
         {...props}
       >
+        {placeholder && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -146,10 +153,10 @@ export function Select({
         ))}
       </select>
       {error && (
-        <p className="mt-1.5 text-xs text-danger-500">{error}</p>
+        <p className="mt-1 text-[10px] text-danger-500">{error}</p>
       )}
       {helperText && !error && (
-        <p className="mt-1.5 text-xs text-dark-400">{helperText}</p>
+        <p className="mt-1 text-[10px] text-dark-400">{helperText}</p>
       )}
     </div>
   );

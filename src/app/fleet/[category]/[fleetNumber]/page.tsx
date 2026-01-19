@@ -1,46 +1,51 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { MainLayout } from '@/components/layout';
-import { Card, CardHeader, CardTitle, Button, Badge, StatusBadge, Tabs, TabPanel } from '@/components/ui';
 import { StatCard } from '@/components/dashboard';
-import { InspectionList } from '@/components/inspections';
-import { JobCardList } from '@/components/job-cards';
-import { TyreDiagram, TyreList, TyreHistoryList } from '@/components/tyres';
-import { getCategoryConfig, type FleetCategory } from '@/lib/constants';
-import { formatDate } from '@/lib/utils';
-import {
-  transformInspection,
-  transformJobCard,
-  transformFault,
-  transformTyre,
-  transformTyreHistory,
-  transformScheduledMaintenance,
-} from '@/lib/transforms';
+import { FaultForm, FaultList } from '@/components/faults';
+import { InspectionFormModal, InspectionList } from '@/components/inspections';
+import { JobCardFormModal, JobCardList } from '@/components/job-cards';
+import { MainLayout } from '@/components/layout';
+import { MaintenanceForm, MaintenanceList } from '@/components/maintenance';
+import { TyreAllocationForm, TyreDiagram, TyreEditForm, TyreHistoryList, TyreList } from '@/components/tyres';
+import { Badge, Button, Card, CardHeader, CardTitle, ConfirmModal, StatusBadge, TabPanel, Tabs } from '@/components/ui';
+import { useFaultMutations, useFaultsByFleetNumber } from '@/hooks/useFaults';
+import { useInspectionMutations, useInspectionsByFleetNumber } from '@/hooks/useInspections';
+import { useJobCardMutations, useJobCardsByFleetNumber } from '@/hooks/useJobCards';
+import { useMaintenanceMutations, useScheduledMaintenanceByFleetNumber } from '@/hooks/useScheduledMaintenance';
+import { useTyreHistoryByFleetNumber, useTyresByFleetNumber } from '@/hooks/useTyres';
 import { useVehicleByFleetNumber } from '@/hooks/useVehicles';
-import { useInspectionsByFleetNumber } from '@/hooks/useInspections';
-import { useJobCardsByFleetNumber } from '@/hooks/useJobCards';
-import { useFaultsByFleetNumber } from '@/hooks/useFaults';
-import { useTyresByFleetNumber, useTyreHistoryByFleetNumber } from '@/hooks/useTyres';
-import { useScheduledMaintenanceByFleetNumber } from '@/hooks/useScheduledMaintenance';
-import {
-  ArrowLeft,
-  Truck,
-  ClipboardCheck,
-  Wrench,
-  AlertTriangle,
-  Circle,
-  Calendar,
-  Clock,
-  FileText,
-  Plus,
-  History,
-  Settings,
-  TrendingUp,
-  Loader2,
-} from 'lucide-react';
+import { getCategoryConfig, type FleetCategory } from '@/lib/constants';
+import
+  {
+    transformFault,
+    transformInspection,
+    transformJobCard,
+    transformScheduledMaintenance,
+    transformTyre,
+    transformTyreHistory,
+  } from '@/lib/transforms';
+import { formatDate } from '@/lib/utils';
+import type { Fault, Inspection, JobCard, ScheduledMaintenance, Tyre, TyreAllocationFormData } from '@/types';
+import
+  {
+    AlertTriangle,
+    ArrowLeft,
+    Calendar,
+    Circle,
+    ClipboardCheck,
+    Clock,
+    FileText,
+    History,
+    Loader2,
+    Plus,
+    Settings,
+    TrendingUp,
+    Truck,
+    Wrench,
+  } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
 
 export default function VehicleDashboardPage() {
   const params = useParams();
@@ -48,6 +53,37 @@ export default function VehicleDashboardPage() {
   const fleetNumber = (params.fleetNumber as string).toUpperCase();
 
   const [activeTab, setActiveTab] = useState('overview');
+  const [tyreAllocationOpen, setTyreAllocationOpen] = useState(false);
+  const [selectedPosition, setSelectedPosition] = useState<string>('');
+  
+  // Tyre edit/delete state
+  const [tyreEditOpen, setTyreEditOpen] = useState(false);
+  const [tyreDeleteOpen, setTyreDeleteOpen] = useState(false);
+  const [selectedTyre, setSelectedTyre] = useState<Tyre | null>(null);
+
+  // Fault CRUD state
+  const [faultFormOpen, setFaultFormOpen] = useState(false);
+  const [faultDeleteOpen, setFaultDeleteOpen] = useState(false);
+  const [selectedFault, setSelectedFault] = useState<Fault | null>(null);
+  const [faultFormMode, setFaultFormMode] = useState<'create' | 'edit'>('create');
+
+  // Maintenance CRUD state
+  const [maintenanceFormOpen, setMaintenanceFormOpen] = useState(false);
+  const [maintenanceDeleteOpen, setMaintenanceDeleteOpen] = useState(false);
+  const [selectedMaintenance, setSelectedMaintenance] = useState<ScheduledMaintenance | null>(null);
+  const [maintenanceFormMode, setMaintenanceFormMode] = useState<'create' | 'edit'>('create');
+
+  // Job Card CRUD state
+  const [jobCardFormOpen, setJobCardFormOpen] = useState(false);
+  const [jobCardDeleteOpen, setJobCardDeleteOpen] = useState(false);
+  const [selectedJobCard, setSelectedJobCard] = useState<JobCard | null>(null);
+  const [jobCardFormMode, setJobCardFormMode] = useState<'create' | 'edit'>('create');
+
+  // Inspection CRUD state
+  const [inspectionFormOpen, setInspectionFormOpen] = useState(false);
+  const [inspectionDeleteOpen, setInspectionDeleteOpen] = useState(false);
+  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
+  const [inspectionFormMode, setInspectionFormMode] = useState<'create' | 'edit'>('create');
 
   // Fetch data from Supabase
   const { data: vehicleRow, loading: vehicleLoading, error: vehicleError } = useVehicleByFleetNumber(fleetNumber);
@@ -57,6 +93,12 @@ export default function VehicleDashboardPage() {
   const { data: tyreRows, loading: tyresLoading } = useTyresByFleetNumber(fleetNumber);
   const { data: tyreHistoryRows, loading: tyreHistoryLoading } = useTyreHistoryByFleetNumber(fleetNumber);
   const { data: maintenanceRows, loading: maintenanceLoading } = useScheduledMaintenanceByFleetNumber(fleetNumber);
+
+  // Mutation hooks
+  const { deleteFault, createFault, updateFault, loading: faultMutationLoading } = useFaultMutations();
+  const { deleteMaintenance, createMaintenance, updateMaintenance, loading: maintenanceMutationLoading } = useMaintenanceMutations();
+  const { deleteJobCard, createJobCard, updateJobCard, updateJobCardStatus, loading: jobCardMutationLoading } = useJobCardMutations();
+  const { deleteInspection, createInspection, updateInspection, startInspection, loading: inspectionMutationLoading } = useInspectionMutations();
 
   const categoryConfig = getCategoryConfig(category);
 
@@ -152,11 +194,24 @@ export default function VehicleDashboardPage() {
               <Settings className="w-4 h-4" />
               Configure
             </Button>
-            <Button variant="secondary">
+            <Button 
+              variant="secondary"
+              onClick={() => {
+                setSelectedInspection(null);
+                setInspectionFormMode('create');
+                setInspectionFormOpen(true);
+              }}
+            >
               <ClipboardCheck className="w-4 h-4" />
               New Inspection
             </Button>
-            <Button>
+            <Button
+              onClick={() => {
+                setSelectedJobCard(null);
+                setJobCardFormMode('create');
+                setJobCardFormOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4" />
               Create Job Card
             </Button>
@@ -366,212 +421,792 @@ export default function VehicleDashboardPage() {
         </TabPanel>
 
         <TabPanel activeTab={activeTab} tabId="inspections">
-          {inspectionsLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
+          <div className="space-y-8">
+            {/* Section Header with Action Button */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Inspection Management</h2>
+                <p className="text-sm text-dark-400 mt-1">
+                  Schedule and track inspections for {fleetNumber}
+                </p>
+              </div>
+              <Button 
+                variant="primary" 
+                size="md"
+                onClick={() => {
+                  setSelectedInspection(null);
+                  setInspectionFormMode('create');
+                  setInspectionFormOpen(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Schedule Inspection
+              </Button>
             </div>
-          ) : inspections.length === 0 ? (
-            <Card>
-              <div className="text-center py-12 text-dark-400">
-                <ClipboardCheck className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No inspections recorded for this vehicle</p>
-                <Button variant="secondary" className="mt-4">
-                  <Plus className="w-4 h-4" />
-                  Schedule Inspection
-                </Button>
+
+            {/* Inspection Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-500/20 rounded-lg">
+                    <ClipboardCheck className="w-5 h-5 text-primary-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Total Inspections</p>
+                    <p className="text-2xl font-bold text-white">{inspections.length}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-accent-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-accent-500/20 rounded-lg">
+                    <Calendar className="w-5 h-5 text-accent-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Scheduled</p>
+                    <p className="text-2xl font-bold text-accent-400">
+                      {inspections.filter(i => i.status === 'scheduled').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-success-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-success-500/20 rounded-lg">
+                    <ClipboardCheck className="w-5 h-5 text-success-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Completed</p>
+                    <p className="text-2xl font-bold text-success-400">
+                      {inspections.filter(i => i.status === 'completed').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-danger-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-danger-500/20 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-danger-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Overdue</p>
+                    <p className="text-2xl font-bold text-danger-400">
+                      {inspections.filter(i => i.status === 'overdue').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Inspection List */}
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b border-dark-700">
+                <div className="flex items-center gap-2">
+                  <ClipboardCheck className="w-5 h-5 text-primary-400" />
+                  <CardTitle>Inspection History</CardTitle>
+                </div>
+                <Badge variant="default">{inspections.length} inspections</Badge>
+              </CardHeader>
+              <div className="p-4">
+                {inspectionsLoading ? (
+                  <div className="flex justify-center py-16">
+                    <Loader2 className="w-10 h-10 text-primary-400 animate-spin" />
+                  </div>
+                ) : inspections.length === 0 ? (
+                  <div className="text-center py-16">
+                    <ClipboardCheck className="w-16 h-16 mx-auto mb-4 text-dark-600" />
+                    <h3 className="text-lg font-medium text-white mb-2">No Inspections Recorded</h3>
+                    <p className="text-dark-400 mb-6">This vehicle has no inspection history</p>
+                    <Button 
+                      variant="secondary"
+                      onClick={() => {
+                        setSelectedInspection(null);
+                        setInspectionFormMode('create');
+                        setInspectionFormOpen(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Schedule First Inspection
+                    </Button>
+                  </div>
+                ) : (
+                  <InspectionList
+                    inspections={inspections}
+                    showVehicle={false}
+                    showActions={true}
+                    onInspectionClick={(inspection) => {
+                      setSelectedInspection(inspection);
+                      setInspectionFormMode('edit');
+                      setInspectionFormOpen(true);
+                    }}
+                    onInspectionEdit={(inspection) => {
+                      setSelectedInspection(inspection);
+                      setInspectionFormMode('edit');
+                      setInspectionFormOpen(true);
+                    }}
+                    onInspectionDelete={(inspection) => {
+                      setSelectedInspection(inspection);
+                      setInspectionDeleteOpen(true);
+                    }}
+                    onInspectionStart={async (inspection) => {
+                      await startInspection(inspection.id);
+                    }}
+                  />
+                )}
               </div>
             </Card>
-          ) : (
-            <InspectionList
-              inspections={inspections}
-              onInspectionClick={(inspection) => console.log('View inspection:', inspection)}
+
+            {/* Inspection Form Modal */}
+            <InspectionFormModal
+              isOpen={inspectionFormOpen}
+              onClose={() => {
+                setInspectionFormOpen(false);
+                setSelectedInspection(null);
+              }}
+              onSubmit={async (inspectionData) => {
+                const inspectionRow = {
+                  vehicle_id: vehicleRow?.id,
+                  fleet_number: fleetNumber,
+                  inspection_type: inspectionData.inspectionType,
+                  status: inspectionData.status || 'scheduled',
+                  scheduled_date: inspectionData.scheduledDate instanceof Date
+                    ? inspectionData.scheduledDate.toISOString()
+                    : inspectionData.scheduledDate,
+                  inspector_name: inspectionData.inspectorName,
+                  odometer_reading: inspectionData.odometerReading,
+                  notes: inspectionData.notes,
+                };
+
+                if (inspectionFormMode === 'edit' && selectedInspection?.id) {
+                  const { error } = await updateInspection(selectedInspection.id, inspectionRow);
+                  if (error) {
+                    console.error('Error updating inspection:', error);
+                    return;
+                  }
+                } else {
+                  const { error } = await createInspection(inspectionRow);
+                  if (error) {
+                    console.error('Error creating inspection:', error);
+                    return;
+                  }
+                }
+                setInspectionFormOpen(false);
+                setSelectedInspection(null);
+              }}
+              inspection={selectedInspection}
+              mode={inspectionFormMode}
+              fleetNumber={fleetNumber}
+              loading={inspectionMutationLoading}
             />
-          )}
+
+            {/* Inspection Delete Confirmation */}
+            <ConfirmModal
+              isOpen={inspectionDeleteOpen}
+              onClose={() => {
+                setInspectionDeleteOpen(false);
+                setSelectedInspection(null);
+              }}
+              onConfirm={async () => {
+                if (selectedInspection?.id) {
+                  const { error } = await deleteInspection(selectedInspection.id);
+                  if (error) {
+                    console.error('Error deleting inspection:', error);
+                  }
+                }
+                setInspectionDeleteOpen(false);
+                setSelectedInspection(null);
+              }}
+              title="Delete Inspection"
+              message={`Are you sure you want to delete this inspection? This action cannot be undone.`}
+              confirmText="Delete"
+              variant="danger"
+              loading={inspectionMutationLoading}
+            />
+          </div>
         </TabPanel>
 
         <TabPanel activeTab={activeTab} tabId="job-cards">
-          {jobCardsLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
+          <div className="space-y-8">
+            {/* Section Header with Action Button */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Job Card Management</h2>
+                <p className="text-sm text-dark-400 mt-1">
+                  Create and manage work orders for {fleetNumber}
+                </p>
+              </div>
+              <Button 
+                variant="primary" 
+                size="md"
+                onClick={() => {
+                  setSelectedJobCard(null);
+                  setJobCardFormMode('create');
+                  setJobCardFormOpen(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Job Card
+              </Button>
             </div>
-          ) : jobCards.length === 0 ? (
-            <Card>
-              <div className="text-center py-12 text-dark-400">
-                <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No job cards recorded for this vehicle</p>
-                <Button variant="secondary" className="mt-4">
-                  <Plus className="w-4 h-4" />
-                  Create Job Card
-                </Button>
+
+            {/* Job Card Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-500/20 rounded-lg">
+                    <FileText className="w-5 h-5 text-primary-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Total</p>
+                    <p className="text-2xl font-bold text-white">{jobCards.length}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-accent-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-accent-500/20 rounded-lg">
+                    <Circle className="w-5 h-5 text-accent-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Open</p>
+                    <p className="text-2xl font-bold text-accent-400">
+                      {jobCards.filter(j => j.status === 'open').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-warning-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-warning-500/20 rounded-lg">
+                    <Wrench className="w-5 h-5 text-warning-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">In Progress</p>
+                    <p className="text-2xl font-bold text-warning-400">
+                      {jobCards.filter(j => j.status === 'in-progress').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-orange-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-500/20 rounded-lg">
+                    <Clock className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Pending Parts</p>
+                    <p className="text-2xl font-bold text-orange-400">
+                      {jobCards.filter(j => j.status === 'pending-parts').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-success-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-success-500/20 rounded-lg">
+                    <ClipboardCheck className="w-5 h-5 text-success-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Completed</p>
+                    <p className="text-2xl font-bold text-success-400">
+                      {jobCards.filter(j => j.status === 'completed' || j.status === 'closed').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Job Card List */}
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b border-dark-700">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary-400" />
+                  <CardTitle>Job Cards</CardTitle>
+                </div>
+                <Badge variant="default">{jobCards.length} job cards</Badge>
+              </CardHeader>
+              <div className="p-4">
+                {jobCardsLoading ? (
+                  <div className="flex justify-center py-16">
+                    <Loader2 className="w-10 h-10 text-primary-400 animate-spin" />
+                  </div>
+                ) : jobCards.length === 0 ? (
+                  <div className="text-center py-16">
+                    <FileText className="w-16 h-16 mx-auto mb-4 text-dark-600" />
+                    <h3 className="text-lg font-medium text-white mb-2">No Job Cards</h3>
+                    <p className="text-dark-400 mb-6">No work orders have been created for this vehicle</p>
+                    <Button 
+                      variant="secondary"
+                      onClick={() => {
+                        setSelectedJobCard(null);
+                        setJobCardFormMode('create');
+                        setJobCardFormOpen(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create First Job Card
+                    </Button>
+                  </div>
+                ) : (
+                  <JobCardList
+                    jobCards={jobCards}
+                    showVehicle={false}
+                    showActions={true}
+                    onJobCardClick={(jobCard: JobCard) => {
+                      setSelectedJobCard(jobCard);
+                      setJobCardFormMode('edit');
+                      setJobCardFormOpen(true);
+                    }}
+                    onJobCardEdit={(jobCard: JobCard) => {
+                      setSelectedJobCard(jobCard);
+                      setJobCardFormMode('edit');
+                      setJobCardFormOpen(true);
+                    }}
+                    onJobCardDelete={(jobCard: JobCard) => {
+                      setSelectedJobCard(jobCard);
+                      setJobCardDeleteOpen(true);
+                    }}
+                    onStatusChange={async (jobCard: JobCard, newStatus: JobCard['status']) => {
+                      await updateJobCardStatus(jobCard.id, newStatus);
+                    }}
+                  />
+                )}
               </div>
             </Card>
-          ) : (
-            <JobCardList
-              jobCards={jobCards}
-              onJobCardClick={(jobCard) => console.log('View job card:', jobCard)}
+
+            {/* Job Card Form Modal */}
+            <JobCardFormModal
+              isOpen={jobCardFormOpen}
+              onClose={() => {
+                setJobCardFormOpen(false);
+                setSelectedJobCard(null);
+              }}
+              onSubmit={async (jobCardData: Partial<JobCard>) => {
+                const jobCardRow = {
+                  vehicle_id: vehicleRow?.id,
+                  fleet_number: fleetNumber,
+                  title: jobCardData.title,
+                  description: jobCardData.description,
+                  job_type: jobCardData.jobType,
+                  priority: jobCardData.priority,
+                  status: jobCardData.status || 'open',
+                  assigned_to: jobCardData.assignedTechnicianName || null,
+                  estimated_hours: jobCardData.estimatedHours || null,
+                  due_date: jobCardData.dueDate 
+                    ? (jobCardData.dueDate instanceof Date 
+                        ? jobCardData.dueDate.toISOString() 
+                        : jobCardData.dueDate)
+                    : null,
+                  notes: jobCardData.notes || null,
+                };
+
+                if (jobCardFormMode === 'edit' && selectedJobCard?.id) {
+                  const { error } = await updateJobCard(selectedJobCard.id, jobCardRow);
+                  if (error) {
+                    console.error('Error updating job card:', error);
+                    return;
+                  }
+                } else {
+                  const { error } = await createJobCard(jobCardRow);
+                  if (error) {
+                    console.error('Error creating job card:', error);
+                    return;
+                  }
+                }
+                setJobCardFormOpen(false);
+                setSelectedJobCard(null);
+              }}
+              jobCard={selectedJobCard}
+              mode={jobCardFormMode}
+              fleetNumber={fleetNumber}
+              loading={jobCardMutationLoading}
             />
-          )}
+
+            {/* Job Card Delete Confirmation */}
+            <ConfirmModal
+              isOpen={jobCardDeleteOpen}
+              onClose={() => {
+                setJobCardDeleteOpen(false);
+                setSelectedJobCard(null);
+              }}
+              onConfirm={async () => {
+                if (selectedJobCard?.id) {
+                  const { error } = await deleteJobCard(selectedJobCard.id);
+                  if (error) {
+                    console.error('Error deleting job card:', error);
+                  }
+                }
+                setJobCardDeleteOpen(false);
+                setSelectedJobCard(null);
+              }}
+              title="Delete Job Card"
+              message={`Are you sure you want to delete job card "${selectedJobCard?.jobNumber}"? This action cannot be undone.`}
+              confirmText="Delete"
+              variant="danger"
+              loading={jobCardMutationLoading}
+            />
+          </div>
         </TabPanel>
 
         <TabPanel activeTab={activeTab} tabId="faults">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Fault History</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Badge variant="warning">{faults.filter(f => f.status === 'open').length} Open</Badge>
-                  <Badge variant="info">{faults.filter(f => f.status === 'in-progress').length} In Progress</Badge>
-                  <Badge variant="success">{faults.filter(f => f.status === 'resolved').length} Resolved</Badge>
-                  <Button variant="secondary" size="sm">
-                    <Plus className="w-4 h-4" />
-                    Report Fault
-                  </Button>
+          <div className="space-y-8">
+            {/* Section Header with Action Button */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Fault Management</h2>
+                <p className="text-sm text-dark-400 mt-1">
+                  Track and manage faults reported for {fleetNumber}
+                </p>
+              </div>
+              <Button 
+                variant="primary" 
+                size="md"
+                onClick={() => {
+                  setSelectedFault(null);
+                  setFaultFormMode('create');
+                  setFaultFormOpen(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Report New Fault
+              </Button>
+            </div>
+
+            {/* Fault Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-500/20 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-primary-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Total Faults</p>
+                    <p className="text-2xl font-bold text-white">{faults.length}</p>
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-            {faultsLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-warning-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-warning-500/20 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-warning-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Open</p>
+                    <p className="text-2xl font-bold text-warning-400">
+                      {faults.filter(f => f.status === 'open').length}
+                    </p>
+                  </div>
+                </div>
               </div>
-            ) : faults.length === 0 ? (
-              <div className="text-center py-12 text-dark-400">
-                <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No faults recorded for this vehicle</p>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-accent-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-accent-500/20 rounded-lg">
+                    <Clock className="w-5 h-5 text-accent-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">In Progress</p>
+                    <p className="text-2xl font-bold text-accent-400">
+                      {faults.filter(f => f.status === 'in-progress' || f.status === 'assigned').length}
+                    </p>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {faults.map((fault) => {
-                  const linkedInspection = inspections.find(i => i.id === fault.inspectionId);
-                  const linkedJobCard = jobCards.find(jc => jc.id === fault.jobCardId);
-                  
-                  return (
-                    <div
-                      key={fault.id}
-                      className="flex items-start gap-4 p-4 rounded-lg bg-dark-800/30 border border-primary-500/10"
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-success-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-success-500/20 rounded-lg">
+                    <Circle className="w-5 h-5 text-success-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Resolved</p>
+                    <p className="text-2xl font-bold text-success-400">
+                      {faults.filter(f => f.status === 'resolved').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fault List Section */}
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b border-dark-700">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-warning-400" />
+                  <CardTitle>Fault History</CardTitle>
+                </div>
+                <Badge variant="default">{faults.length} faults</Badge>
+              </CardHeader>
+              <div className="p-4">
+                {faultsLoading ? (
+                  <div className="flex justify-center py-16">
+                    <Loader2 className="w-10 h-10 text-primary-400 animate-spin" />
+                  </div>
+                ) : faults.length === 0 ? (
+                  <div className="text-center py-16">
+                    <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-dark-600" />
+                    <h3 className="text-lg font-medium text-white mb-2">No Faults Recorded</h3>
+                    <p className="text-dark-400 mb-6">This vehicle has no reported faults</p>
+                    <Button 
+                      variant="secondary"
+                      onClick={() => {
+                        setSelectedFault(null);
+                        setFaultFormMode('create');
+                        setFaultFormOpen(true);
+                      }}
                     >
-                      <div className={`p-2 rounded-lg ${
-                        fault.severity === 'critical' ? 'bg-red-500/20' :
-                        fault.severity === 'high' ? 'bg-orange-500/20' :
-                        fault.severity === 'medium' ? 'bg-yellow-500/20' :
-                        'bg-blue-500/20'
-                      }`}>
-                        <AlertTriangle className={`w-5 h-5 ${
-                          fault.severity === 'critical' ? 'text-red-400' :
-                          fault.severity === 'high' ? 'text-orange-400' :
-                          fault.severity === 'medium' ? 'text-yellow-400' :
-                          'text-blue-400'
-                        }`} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="text-white font-medium">{fault.description}</p>
-                            <div className="flex items-center gap-3 mt-1 flex-wrap">
-                              <Badge
-                                variant={fault.severity === 'critical' ? 'error' : fault.severity === 'high' ? 'warning' : 'default'}
-                                size="sm"
-                              >
-                                {fault.severity}
-                              </Badge>
-                            </div>
-                          </div>
-                          <StatusBadge status={fault.status} />
-                        </div>
-                        
-                        {/* Linked Inspection */}
-                        {linkedInspection && (
-                          <div className="flex items-center gap-2 mt-3 p-2 rounded bg-dark-700/50">
-                            <ClipboardCheck className="w-4 h-4 text-primary-400" />
-                            <span className="text-sm text-dark-300">
-                              From {linkedInspection.inspectionType} inspection on {formatDate(linkedInspection.scheduledDate)}
-                              {linkedInspection.inspectorName && ` by ${linkedInspection.inspectorName}`}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {/* Linked Job Card */}
-                        {linkedJobCard ? (
-                          <div className="flex items-center gap-2 mt-2 p-2 rounded bg-accent-500/10 border border-accent-500/20">
-                            <FileText className="w-4 h-4 text-accent-400" />
-                            <span className="text-sm text-accent-300">
-                              Job Card: {linkedJobCard.jobNumber} - {linkedJobCard.title}
-                            </span>
-                            <StatusBadge status={linkedJobCard.status} />
-                          </div>
-                        ) : fault.status === 'open' && (
-                          <div className="mt-2">
-                            <Button variant="ghost" size="sm" className="text-accent-400">
-                              <Plus className="w-3 h-3 mr-1" />
-                              Create Job Card
-                            </Button>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-4 mt-3 text-sm text-dark-400">
-                          <span>Reported: {formatDate(fault.createdAt)}</span>
-                          {fault.resolvedDate && (
-                            <span className="text-success-400">Resolved: {formatDate(fault.resolvedDate)}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      <Plus className="w-4 h-4 mr-2" />
+                      Report First Fault
+                    </Button>
+                  </div>
+                ) : (
+                  <FaultList
+                    faults={faults}
+                    inspections={inspections}
+                    jobCards={jobCards}
+                    showActions={true}
+                    onFaultEdit={(fault) => {
+                      setSelectedFault(fault);
+                      setFaultFormMode('edit');
+                      setFaultFormOpen(true);
+                    }}
+                    onFaultDelete={(fault) => {
+                      setSelectedFault(fault);
+                      setFaultDeleteOpen(true);
+                    }}
+                    onCreateJobCard={(fault) => {
+                      console.log('Create job card for fault:', fault);
+                      // TODO: Implement job card creation from fault
+                    }}
+                  />
+                )}
               </div>
-            )}
-          </Card>
+            </Card>
+
+            {/* Fault Form Modal */}
+            <FaultForm
+              isOpen={faultFormOpen}
+              onClose={() => {
+                setFaultFormOpen(false);
+                setSelectedFault(null);
+              }}
+              onSubmit={async (faultData) => {
+                const faultRow = {
+                  vehicle_id: vehicleRow?.id,
+                  fleet_number: fleetNumber,
+                  description: faultData.description || '',
+                  severity: faultData.severity,
+                  status: faultData.status,
+                  category: faultData.category,
+                  reported_by: faultData.reportedBy || 'Unknown',
+                  reported_date: new Date().toISOString(),
+                  resolution_notes: faultData.resolutionNotes,
+                  resolved_date: faultData.status === 'resolved' ? new Date().toISOString() : null,
+                };
+
+                if (faultFormMode === 'edit' && selectedFault?.id) {
+                  const { error } = await updateFault(selectedFault.id, faultRow);
+                  if (error) {
+                    console.error('Error updating fault:', error);
+                    return;
+                  }
+                } else {
+                  const { error } = await createFault(faultRow);
+                  if (error) {
+                    console.error('Error creating fault:', error);
+                    return;
+                  }
+                }
+                setFaultFormOpen(false);
+                setSelectedFault(null);
+              }}
+              fault={selectedFault}
+              mode={faultFormMode}
+              fleetNumber={fleetNumber}
+              loading={faultMutationLoading}
+            />
+
+            {/* Fault Delete Confirmation */}
+            <ConfirmModal
+              isOpen={faultDeleteOpen}
+              onClose={() => {
+                setFaultDeleteOpen(false);
+                setSelectedFault(null);
+              }}
+              onConfirm={async () => {
+                if (selectedFault?.id) {
+                  const { error } = await deleteFault(selectedFault.id);
+                  if (error) {
+                    console.error('Error deleting fault:', error);
+                  }
+                }
+                setFaultDeleteOpen(false);
+                setSelectedFault(null);
+              }}
+              title="Delete Fault"
+              message={`Are you sure you want to delete this fault? This action cannot be undone.`}
+              confirmText="Delete"
+              variant="danger"
+              loading={faultMutationLoading}
+            />
+          </div>
         </TabPanel>
 
         <TabPanel activeTab={activeTab} tabId="tyres">
-          <div className="space-y-6">
-            <div className={category === 'interlinks' ? 'grid lg:grid-cols-1 gap-6' : 'grid lg:grid-cols-3 gap-6'}>
-              <div className={category === 'interlinks' ? '' : 'lg:col-span-1'}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Tyre Positions</CardTitle>
-                  </CardHeader>
-                  <div className="flex justify-center py-4">
-                    {tyresLoading ? (
-                      <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
-                    ) : (
-                      <TyreDiagram
-                        tyres={tyres}
-                        vehicleType={category === 'horses' ? 'truck' : category === 'interlinks' ? 'interlink' : 'trailer'}
-                        onTyreClick={(tyre) => console.log('Tyre clicked:', tyre)}
-                      />
-                    )}
-                  </div>
-                </Card>
+          <div className="space-y-8">
+            {/* Section Header with Action Button */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Tyre Management</h2>
+                <p className="text-sm text-dark-400 mt-1">
+                  Manage tyre allocations and track condition for {fleetNumber}
+                </p>
               </div>
-              {category !== 'interlinks' && (
-                <div className="lg:col-span-2">
-                  {tyresLoading ? (
-                    <div className="flex justify-center py-12">
-                      <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
-                    </div>
-                  ) : tyres.length === 0 ? (
-                    <Card>
-                      <div className="text-center py-12 text-dark-400">
-                        <Circle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>No tyres recorded for this vehicle</p>
-                      </div>
-                    </Card>
-                  ) : (
-                    <TyreList
-                      tyres={tyres}
-                      onTyreClick={(tyre) => console.log('View tyre:', tyre)}
-                    />
-                  )}
-                </div>
-              )}
+              <Button 
+                variant="primary" 
+                size="md"
+                onClick={() => {
+                  setSelectedPosition('');
+                  setTyreAllocationOpen(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Allocate New Tyre
+              </Button>
             </div>
 
-            {category === 'interlinks' && tyres.length > 0 && (
-              <TyreList
-                tyres={tyres}
-                onTyreClick={(tyre) => console.log('View tyre:', tyre)}
-              />
-            )}
+            {/* Allocated Tyres Summary Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-500/20 rounded-lg">
+                    <Circle className="w-5 h-5 text-primary-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Total Allocated</p>
+                    <p className="text-2xl font-bold text-white">{tyres.length}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-success-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-success-500/20 rounded-lg">
+                    <Circle className="w-5 h-5 text-success-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Good Condition</p>
+                    <p className="text-2xl font-bold text-success-400">
+                      {tyres.filter(t => t.condition === 'new' || t.condition === 'good').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-warning-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-warning-500/20 rounded-lg">
+                    <Circle className="w-5 h-5 text-warning-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Fair/Worn</p>
+                    <p className="text-2xl font-bold text-warning-400">
+                      {tyres.filter(t => t.condition === 'fair' || t.condition === 'worn').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-danger-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-danger-500/20 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-danger-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Needs Replacement</p>
+                    <p className="text-2xl font-bold text-danger-400">
+                      {tyres.filter(t => t.condition === 'replace').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tyre Positions Diagram Section */}
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b border-dark-700">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-primary-400" />
+                  <CardTitle>Tyre Position Diagram</CardTitle>
+                </div>
+                <p className="text-sm text-dark-400">Click on a position to allocate or view tyre details</p>
+              </CardHeader>
+              <div className="p-6">
+                {tyresLoading ? (
+                  <div className="flex justify-center py-16">
+                    <Loader2 className="w-10 h-10 text-primary-400 animate-spin" />
+                  </div>
+                ) : (
+                  <div className={category === 'interlinks' ? 'max-w-5xl mx-auto' : 'max-w-md mx-auto'}>
+                    <TyreDiagram
+                      tyres={tyres}
+                      vehicleType={category === 'horses' ? 'truck' : category === 'interlinks' ? 'interlink' : 'trailer'}
+                      onTyreClick={(position) => {
+                        const posStr = typeof position === 'string' ? position : position?.position || '';
+                        setSelectedPosition(posStr);
+                        setTyreAllocationOpen(true);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {/* Tyre List Section */}
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b border-dark-700">
+                <div className="flex items-center gap-2">
+                  <Circle className="w-5 h-5 text-accent-400" />
+                  <CardTitle>Allocated Tyres List</CardTitle>
+                </div>
+                <Badge variant="default">{tyres.length} tyres</Badge>
+              </CardHeader>
+              <div className="p-0">
+                {tyresLoading ? (
+                  <div className="flex justify-center py-16">
+                    <Loader2 className="w-10 h-10 text-primary-400 animate-spin" />
+                  </div>
+                ) : tyres.length === 0 ? (
+                  <div className="text-center py-16">
+                    <Circle className="w-16 h-16 mx-auto mb-4 text-dark-600" />
+                    <h3 className="text-lg font-medium text-white mb-2">No Tyres Allocated</h3>
+                    <p className="text-dark-400 mb-6">Start by allocating tyres to this vehicle&apos;s positions</p>
+                    <Button 
+                      variant="secondary"
+                      onClick={() => {
+                        setSelectedPosition('');
+                        setTyreAllocationOpen(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Allocate First Tyre
+                    </Button>
+                  </div>
+                ) : (
+                  <TyreList
+                    tyres={tyres}
+                    showActions={true}
+                    onTyreClick={(tyre) => {
+                      setSelectedTyre(tyre);
+                      setTyreEditOpen(true);
+                    }}
+                    onTyreEdit={(tyre) => {
+                      setSelectedTyre(tyre);
+                      setTyreEditOpen(true);
+                    }}
+                    onTyreDelete={(tyre) => {
+                      setSelectedTyre(tyre);
+                      setTyreDeleteOpen(true);
+                    }}
+                  />
+                )}
+              </div>
+            </Card>
 
             {/* Tyre History Section */}
             <Card>
@@ -589,57 +1224,267 @@ export default function VehicleDashboardPage() {
                 <TyreHistoryList history={tyreHistory} />
               )}
             </Card>
+
+            {/* Tyre Allocation Modal */}
+            <TyreAllocationForm
+              isOpen={tyreAllocationOpen}
+              onClose={() => {
+                setTyreAllocationOpen(false);
+                setSelectedPosition('');
+              }}
+              onSubmit={(data: TyreAllocationFormData) => {
+                console.log('Allocating tyre:', data);
+                // TODO: Integrate with Supabase to save tyre allocation
+                setTyreAllocationOpen(false);
+                setSelectedPosition('');
+              }}
+              position={selectedPosition}
+              positionLabel={selectedPosition}
+              fleetNumber={fleetNumber}
+              vehicleType={category === 'horses' ? 'horse' : category === 'interlinks' ? 'interlink' : 'trailer'}
+            />
+
+            {/* Tyre Edit Modal */}
+            <TyreEditForm
+              isOpen={tyreEditOpen}
+              onClose={() => {
+                setTyreEditOpen(false);
+                setSelectedTyre(null);
+              }}
+              onSubmit={(updatedTyre: Tyre) => {
+                console.log('Saving tyre:', updatedTyre);
+                // TODO: Integrate with Supabase to update tyre
+                setTyreEditOpen(false);
+                setSelectedTyre(null);
+              }}
+              tyre={selectedTyre}
+              mode="edit"
+            />
+
+            {/* Tyre Delete Confirmation */}
+            <ConfirmModal
+              isOpen={tyreDeleteOpen}
+              onClose={() => {
+                setTyreDeleteOpen(false);
+                setSelectedTyre(null);
+              }}
+              onConfirm={() => {
+                console.log('Deleting tyre:', selectedTyre);
+                // TODO: Integrate with Supabase to delete tyre
+                setTyreDeleteOpen(false);
+                setSelectedTyre(null);
+              }}
+              title="Remove Tyre"
+              message={`Are you sure you want to remove tyre ${selectedTyre?.serialNumber} from ${fleetNumber}? This will unallocate the tyre from this vehicle.`}
+              confirmText="Remove"
+              variant="danger"
+            />
           </div>
         </TabPanel>
 
         <TabPanel activeTab={activeTab} tabId="maintenance">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Scheduled Maintenance</CardTitle>
-                <Button variant="secondary" size="sm">
-                  <Plus className="w-4 h-4" />
-                  Schedule Maintenance
-                </Button>
+          <div className="space-y-8">
+            {/* Section Header with Action Button */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Scheduled Maintenance</h2>
+                <p className="text-sm text-dark-400 mt-1">
+                  Manage maintenance schedules for {fleetNumber}
+                </p>
               </div>
-            </CardHeader>
-            {maintenanceLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
-              </div>
-            ) : scheduledMaintenance.length === 0 ? (
-              <div className="text-center py-12 text-dark-400">
-                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No scheduled maintenance for this vehicle</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {scheduledMaintenance.map((maintenance) => (
-                  <div
-                    key={maintenance.id}
-                    className="flex items-center justify-between p-4 rounded-lg bg-dark-800/30 border border-primary-500/10"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 rounded-lg bg-primary-500/20">
-                        <Calendar className="w-5 h-5 text-primary-400" />
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">{maintenance.maintenanceType}</p>
-                        <p className="text-sm text-dark-400">
-                          Due: {formatDate(maintenance.scheduledDate)}
-                          {maintenance.intervalKm && ` or every ${maintenance.intervalKm.toLocaleString()} km`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <StatusBadge status={maintenance.status} />
-                      <Button variant="ghost" size="sm">Complete</Button>
-                    </div>
+              <Button 
+                variant="primary" 
+                size="md"
+                onClick={() => {
+                  setSelectedMaintenance(null);
+                  setMaintenanceFormMode('create');
+                  setMaintenanceFormOpen(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Schedule Maintenance
+              </Button>
+            </div>
+
+            {/* Maintenance Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-500/20 rounded-lg">
+                    <Calendar className="w-5 h-5 text-primary-400" />
                   </div>
-                ))}
+                  <div>
+                    <p className="text-sm text-dark-400">Total Scheduled</p>
+                    <p className="text-2xl font-bold text-white">{scheduledMaintenance.length}</p>
+                  </div>
+                </div>
               </div>
-            )}
-          </Card>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-danger-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-danger-500/20 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-danger-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Overdue</p>
+                    <p className="text-2xl font-bold text-danger-400">
+                      {scheduledMaintenance.filter(m => m.status === 'overdue').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-warning-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-warning-500/20 rounded-lg">
+                    <Clock className="w-5 h-5 text-warning-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Due Soon</p>
+                    <p className="text-2xl font-bold text-warning-400">
+                      {scheduledMaintenance.filter(m => m.status === 'due' || m.status === 'upcoming').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-dark-800/50 rounded-xl border border-success-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-success-500/20 rounded-lg">
+                    <Circle className="w-5 h-5 text-success-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-dark-400">Completed</p>
+                    <p className="text-2xl font-bold text-success-400">
+                      {scheduledMaintenance.filter(m => m.status === 'completed').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Maintenance List Section */}
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b border-dark-700">
+                <div className="flex items-center gap-2">
+                  <Wrench className="w-5 h-5 text-primary-400" />
+                  <CardTitle>Maintenance Schedule</CardTitle>
+                </div>
+                <Badge variant="default">{scheduledMaintenance.length} items</Badge>
+              </CardHeader>
+              <div className="p-4">
+                {maintenanceLoading ? (
+                  <div className="flex justify-center py-16">
+                    <Loader2 className="w-10 h-10 text-primary-400 animate-spin" />
+                  </div>
+                ) : scheduledMaintenance.length === 0 ? (
+                  <div className="text-center py-16">
+                    <Calendar className="w-16 h-16 mx-auto mb-4 text-dark-600" />
+                    <h3 className="text-lg font-medium text-white mb-2">No Scheduled Maintenance</h3>
+                    <p className="text-dark-400 mb-6">Schedule maintenance to keep your vehicle in top condition</p>
+                    <Button 
+                      variant="secondary"
+                      onClick={() => {
+                        setSelectedMaintenance(null);
+                        setMaintenanceFormMode('create');
+                        setMaintenanceFormOpen(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Schedule First Maintenance
+                    </Button>
+                  </div>
+                ) : (
+                  <MaintenanceList
+                    maintenance={scheduledMaintenance}
+                    showActions={true}
+                    onMaintenanceEdit={(item) => {
+                      setSelectedMaintenance(item);
+                      setMaintenanceFormMode('edit');
+                      setMaintenanceFormOpen(true);
+                    }}
+                    onMaintenanceDelete={(item) => {
+                      setSelectedMaintenance(item);
+                      setMaintenanceDeleteOpen(true);
+                    }}
+                    onMaintenanceComplete={async (item) => {
+                      const { error } = await updateMaintenance(item.id, {
+                        status: 'completed',
+                        last_completed_date: new Date().toISOString(),
+                      });
+                      if (error) {
+                        console.error('Error completing maintenance:', error);
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            </Card>
+
+            {/* Maintenance Form Modal */}
+            <MaintenanceForm
+              isOpen={maintenanceFormOpen}
+              onClose={() => {
+                setMaintenanceFormOpen(false);
+                setSelectedMaintenance(null);
+              }}
+              onSubmit={async (maintenanceData) => {
+                const maintenanceRow = {
+                  vehicle_id: vehicleRow?.id,
+                  fleet_number: fleetNumber,
+                  maintenance_type: maintenanceData.maintenanceType || '',
+                  description: maintenanceData.description,
+                  interval_days: maintenanceData.intervalDays,
+                  interval_km: maintenanceData.intervalKm,
+                  next_due_date: maintenanceData.scheduledDate?.toISOString(),
+                  last_completed_date: maintenanceData.lastCompletedDate?.toISOString(),
+                  last_completed_mileage: maintenanceData.lastCompletedMileage,
+                  status: (maintenanceData.status || 'upcoming') as 'upcoming' | 'due' | 'overdue' | 'completed',
+                };
+
+                if (maintenanceFormMode === 'edit' && selectedMaintenance?.id) {
+                  const { error } = await updateMaintenance(selectedMaintenance.id, maintenanceRow);
+                  if (error) {
+                    console.error('Error updating maintenance:', error);
+                    return;
+                  }
+                } else {
+                  const { error } = await createMaintenance(maintenanceRow);
+                  if (error) {
+                    console.error('Error creating maintenance:', error);
+                    return;
+                  }
+                }
+                setMaintenanceFormOpen(false);
+                setSelectedMaintenance(null);
+              }}
+              maintenance={selectedMaintenance}
+              mode={maintenanceFormMode}
+              fleetNumber={fleetNumber}
+              loading={maintenanceMutationLoading}
+            />
+
+            {/* Maintenance Delete Confirmation */}
+            <ConfirmModal
+              isOpen={maintenanceDeleteOpen}
+              onClose={() => {
+                setMaintenanceDeleteOpen(false);
+                setSelectedMaintenance(null);
+              }}
+              onConfirm={async () => {
+                if (selectedMaintenance?.id) {
+                  const { error } = await deleteMaintenance(selectedMaintenance.id);
+                  if (error) {
+                    console.error('Error deleting maintenance:', error);
+                  }
+                }
+                setMaintenanceDeleteOpen(false);
+                setSelectedMaintenance(null);
+              }}
+              title="Delete Maintenance Schedule"
+              message={`Are you sure you want to delete this maintenance schedule? This action cannot be undone.`}
+              confirmText="Delete"
+              variant="danger"
+              loading={maintenanceMutationLoading}
+            />
+          </div>
         </TabPanel>
 
         <TabPanel activeTab={activeTab} tabId="history">

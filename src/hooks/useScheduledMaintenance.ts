@@ -1,8 +1,8 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useCallback, useEffect, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useCallback, useEffect, useState } from 'react';
 
 // Database row types
 export interface ScheduledMaintenanceRow {
@@ -125,4 +125,79 @@ export function useOverdueMaintenance() {
   }, [fetchData]);
 
   return { data, loading, error, refetch: fetchData };
+}
+
+// Mutation hooks for scheduled maintenance
+export function useMaintenanceMutations() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const supabase = createClient();
+
+  const createMaintenance = useCallback(async (maintenance: Partial<ScheduledMaintenanceRow>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('scheduled_maintenance')
+        .insert([maintenance])
+        .select()
+        .single();
+
+      if (err) throw err;
+      return { data, error: null };
+    } catch (err) {
+      setError(err as Error);
+      return { data: null, error: err as Error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const updateMaintenance = useCallback(async (id: string, updates: Partial<ScheduledMaintenanceRow>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('scheduled_maintenance')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (err) throw err;
+      return { data, error: null };
+    } catch (err) {
+      setError(err as Error);
+      return { data: null, error: err as Error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const deleteMaintenance = useCallback(async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error: err } = await supabase
+        .from('scheduled_maintenance')
+        .delete()
+        .eq('id', id);
+
+      if (err) throw err;
+      return { success: true, error: null };
+    } catch (err) {
+      setError(err as Error);
+      return { success: false, error: err as Error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  return {
+    createMaintenance,
+    updateMaintenance,
+    deleteMaintenance,
+    loading,
+    error,
+  };
 }

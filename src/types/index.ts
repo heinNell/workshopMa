@@ -32,8 +32,41 @@ export interface Inspection {
   notes?: string;
   overallCondition?: 'good' | 'fair' | 'poor';
   faultsFound?: number;
+  // New fields from inspection forms system
+  inspectionFormId?: string;
+  inspectionFormVersionId?: string;
+  userId?: string;
+  startedAt?: Date;
+  submittedAt?: Date;
+  date?: Date;
+  failedItems?: number;
+  startingLatitude?: number;
+  startingLongitude?: number;
+  submittedLatitude?: number;
+  submittedLongitude?: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface InspectionForm {
+  id: string;
+  title: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InspectionFormVersion {
+  id: string;
+  inspectionFormId: string;
+  versionNumber: number;
+  formStructure: {
+    categories: Array<{
+      name: string;
+      items: string[];
+    }>;
+  };
+  createdAt: Date;
 }
 
 export interface InspectionItem {
@@ -73,7 +106,7 @@ export interface JobCard {
   title: string;
   description: string;
   jobType?: 'repair' | 'maintenance' | 'inspection' | 'modification';
-  priority: 'low' | 'medium' | 'high' | 'urgent' | 'critical';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'open' | 'in-progress' | 'pending-parts' | 'completed' | 'closed';
   assignedTechnicianId?: string;
   assignedTechnicianName?: string;
@@ -86,6 +119,162 @@ export interface JobCard {
   dueDate?: Date;
   completedDate?: Date;
   notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Work Order types aligned with SQL schema (jobcardscreation.sql)
+export interface WorkOrder {
+  id: string;
+  number: string;
+  description?: string;
+  state: 'draft' | 'open' | 'in-progress' | 'pending-parts' | 'completed' | 'closed' | 'cancelled';
+  // Dates
+  issuedAt?: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  expectedCompletedAt?: Date;
+  scheduledAt?: Date;
+  durationInSeconds?: number;
+  laborTimeInSeconds?: number;
+  // Associations
+  createdById?: string;
+  createdByName?: string;
+  issuedById?: string;
+  issuedByName?: string;
+  contactId?: string;
+  contactName?: string;
+  contactImageUrl?: string;
+  vehicleId: string;
+  vehicleName?: string;
+  vendorId?: string;
+  vendorName?: string;
+  workOrderStatusId?: string;
+  workOrderStatusName?: string;
+  workOrderStatusColor?: string;
+  // Financial
+  invoiceNumber?: string;
+  purchaseOrderNumber?: string;
+  discountType?: string;
+  discountPercentage?: number;
+  discount?: number;
+  partsSubtotal?: number;
+  laborSubtotal?: number;
+  subtotal?: number;
+  tax1Type?: string;
+  tax1Percentage?: number;
+  tax1?: number;
+  tax2Type?: string;
+  tax2Percentage?: number;
+  tax2?: number;
+  partsMarkupType?: string;
+  partsMarkup?: number;
+  partsMarkupPercentage?: number;
+  laborMarkupType?: string;
+  laborMarkup?: number;
+  laborMarkupPercentage?: number;
+  totalAmount?: number;
+  // Meter readings
+  startingMeterValue?: number;
+  endingMeterValue?: number;
+  startingSecondaryMeterValue?: number;
+  endingSecondaryMeterValue?: number;
+  endingMeterSameAsStart?: boolean;
+  // Flags
+  isWatched?: boolean;
+  customFields?: Record<string, unknown>;
+  attachmentPermissions?: {
+    read_photos: boolean;
+    manage_photos: boolean;
+    read_documents: boolean;
+    manage_documents: boolean;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WorkOrderLineItem {
+  id: string;
+  workOrderId: string;
+  title?: string;
+  description?: string;
+  // VMRS codes
+  vmrsSystemGroupId?: string;
+  vmrsSystemId?: string;
+  vmrsAssemblyId?: string;
+  vmrsComponentId?: string;
+  vmrsReasonForRepairId?: string;
+  vmrsRepairPriorityClassId?: string;
+  // Totals
+  partsTotal?: number;
+  laborTotal?: number;
+  total?: number;
+  position: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WorkOrderSubLineItem {
+  id: string;
+  workOrderLineItemId: string;
+  itemType: 'Contact' | 'Part' | 'Labor';
+  description?: string;
+  quantity?: number;
+  unitPrice?: number;
+  total?: number;
+  // Part-specific
+  partId?: string;
+  partNumber?: string;
+  partName?: string;
+  // Contact/Labor specific
+  contactId?: string;
+  contactName?: string;
+  laborHours?: number;
+  laborRate?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LaborTimeEntry {
+  id: string;
+  workOrderId: string;
+  workOrderLineItemId?: string;
+  workOrderSubLineItemId?: string;
+  contactId?: string;
+  contactName?: string;
+  startedAt?: Date;
+  endedAt?: Date;
+  durationInSeconds?: number;
+  active: boolean;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Contact {
+  id: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  mobileNumber?: string;
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  employeeNumber?: string;
+  jobTitle?: string;
+  department?: string;
+  licenseClass?: string;
+  licenseNumber?: string;
+  licenseExpiryDate?: Date;
+  birthDate?: Date;
+  startDate?: Date;
+  isTechnician: boolean;
+  isVehicleOperator: boolean;
+  isEmployee: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -151,6 +340,41 @@ export interface TyreHistory {
   createdAt: Date;
 }
 
+export interface TyreAllocation {
+  id: string;
+  tyreCode: string;
+  brand: string;
+  pattern: string;
+  supplier: string;
+  cost: number;
+  currentKilometers: number;
+  mountedDate: Date;
+  vehicleId?: string;
+  fleetNumber?: string;
+  position: string;
+  size?: string;
+  condition?: 'new' | 'good' | 'fair' | 'worn' | 'replace';
+  treadDepth?: number;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TyreAllocationFormData {
+  tyreCode: string;
+  brand: string;
+  pattern: string;
+  supplier: string;
+  cost: number;
+  currentKilometers: number;
+  mountedDate: string;
+  position: string;
+  size?: string;
+  condition?: 'new' | 'good' | 'fair' | 'worn' | 'replace';
+  treadDepth?: number;
+  notes?: string;
+}
+
 export interface InventoryItem {
   id: string;
   partNumber: string;
@@ -200,7 +424,7 @@ export interface ScheduledMaintenance {
   lastCompletedMileage?: number;
   nextDueDate?: Date;
   nextDueMileage?: number;
-  status: 'scheduled' | 'upcoming' | 'due' | 'overdue' | 'completed';
+  status: 'upcoming' | 'due' | 'overdue' | 'completed';
   createdAt: Date;
   updatedAt: Date;
 }

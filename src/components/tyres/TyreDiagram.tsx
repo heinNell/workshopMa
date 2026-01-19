@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-import { Card, Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface TyrePosition {
@@ -179,11 +177,9 @@ export function TyreDiagram({
   // For interlinks, render two trailer diagrams
   if (effectiveType === 'interlink') {
     return (
-      <Card className={className}>
-        <h3 className="text-lg font-semibold text-white mb-4">Tyre Positions - Interlink (34 Tyres)</h3>
-
+      <div className={cn('space-y-4', className)}>
         {/* Legend */}
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex flex-wrap items-center justify-center gap-4 p-3 bg-dark-800/30 rounded-lg">
           {Object.entries(conditionLabels).map(([key, label]) => (
             <div key={key} className="flex items-center gap-2">
               <span
@@ -202,22 +198,22 @@ export function TyreDiagram({
         </div>
 
         {/* Two Trailer Diagrams */}
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 gap-6">
           {/* Trailer 1 (Front) */}
-          <div>
-            <h4 className="text-sm font-medium text-primary-400 mb-2 text-center">Trailer 1 (Front) - 17 Positions</h4>
-            <div className="relative bg-dark-800/50 rounded-xl border border-primary-500/10 aspect-[1.5/1] min-h-[250px]">
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-primary-400 text-center">Trailer 1 (Front) - 17 Positions</h4>
+            <div className="relative bg-dark-800/50 rounded-xl border border-primary-500/20 aspect-[1.4/1] min-h-[280px]">
               {/* Trailer outline */}
               <div className="absolute inset-[10%] border-2 border-dashed border-primary-500/20 rounded-lg" />
               
               {/* Trailer label */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <span className="text-dark-500 text-xs font-medium">T1</span>
+                <span className="text-dark-600 text-lg font-bold">T1</span>
               </div>
 
               {/* Direction indicator */}
-              <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-dark-500">
-                Front
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 text-xs text-dark-500 font-medium">
+                ↑ Front
               </div>
 
               {/* Tyre positions */}
@@ -233,20 +229,20 @@ export function TyreDiagram({
           </div>
 
           {/* Trailer 2 (Rear) */}
-          <div>
-            <h4 className="text-sm font-medium text-accent-400 mb-2 text-center">Trailer 2 (Rear) - 17 Positions</h4>
-            <div className="relative bg-dark-800/50 rounded-xl border border-accent-500/10 aspect-[1.5/1] min-h-[250px]">
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-accent-400 text-center">Trailer 2 (Rear) - 17 Positions</h4>
+            <div className="relative bg-dark-800/50 rounded-xl border border-accent-500/20 aspect-[1.4/1] min-h-[280px]">
               {/* Trailer outline */}
               <div className="absolute inset-[10%] border-2 border-dashed border-accent-500/20 rounded-lg" />
               
               {/* Trailer label */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <span className="text-dark-500 text-xs font-medium">T2</span>
+                <span className="text-dark-600 text-lg font-bold">T2</span>
               </div>
 
               {/* Direction indicator */}
-              <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-dark-500">
-                Front
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 text-xs text-dark-500 font-medium">
+                ↑ Front
               </div>
 
               {/* Tyre positions */}
@@ -261,86 +257,18 @@ export function TyreDiagram({
             </div>
           </div>
         </div>
-
-        {/* Tyre list */}
-        <div className="mt-6 space-y-2">
-          <h4 className="text-sm font-medium text-dark-300 mb-3">Installed Tyres ({positions.filter((t) => t.serialNumber).length} of 34)</h4>
-          {positions.filter((t) => t.serialNumber).length === 0 ? (
-            <p className="text-sm text-dark-500">No tyres recorded</p>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-4">
-              {/* Trailer 1 Tyres */}
-              <div>
-                <h5 className="text-xs font-medium text-primary-400 mb-2">Trailer 1</h5>
-                <div className="grid gap-1">
-                  {positions
-                    .filter((t) => t.serialNumber && t.position.startsWith('T1-'))
-                    .map((tyre) => (
-                      <div
-                        key={tyre.position}
-                        className="flex items-center justify-between p-2 bg-dark-800/50 rounded-lg"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              'w-2 h-2 rounded-full',
-                              tyre.condition ? conditionColors[tyre.condition].split(' ')[0] : 'bg-dark-600'
-                            )}
-                          />
-                          <span className="text-xs font-medium text-white">{tyre.position}</span>
-                          <span className="text-xs text-dark-400">{tyre.serialNumber}</span>
-                        </div>
-                        {tyre.treadDepth !== undefined && (
-                          <span className="text-[10px] text-dark-400">{tyre.treadDepth}mm</span>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              </div>
-              {/* Trailer 2 Tyres */}
-              <div>
-                <h5 className="text-xs font-medium text-accent-400 mb-2">Trailer 2</h5>
-                <div className="grid gap-1">
-                  {positions
-                    .filter((t) => t.serialNumber && t.position.startsWith('T2-'))
-                    .map((tyre) => (
-                      <div
-                        key={tyre.position}
-                        className="flex items-center justify-between p-2 bg-dark-800/50 rounded-lg"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              'w-2 h-2 rounded-full',
-                              tyre.condition ? conditionColors[tyre.condition].split(' ')[0] : 'bg-dark-600'
-                            )}
-                          />
-                          <span className="text-xs font-medium text-white">{tyre.position}</span>
-                          <span className="text-xs text-dark-400">{tyre.serialNumber}</span>
-                        </div>
-                        {tyre.treadDepth !== undefined && (
-                          <span className="text-[10px] text-dark-400">{tyre.treadDepth}mm</span>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
+      </div>
     );
   }
 
   // Standard layout for horse/trailer
   const layout = effectiveType === 'horse' ? horseTyreLayout : trailerTyreLayout;
+  const totalPositions = layout.length;
 
   return (
-    <Card className={className}>
-      <h3 className="text-lg font-semibold text-white mb-4">Tyre Positions</h3>
-
+    <div className={cn('space-y-4', className)}>
       {/* Legend */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-center gap-4 p-3 bg-dark-800/30 rounded-lg">
         {Object.entries(conditionLabels).map(([key, label]) => (
           <div key={key} className="flex items-center gap-2">
             <span
@@ -359,102 +287,55 @@ export function TyreDiagram({
       </div>
 
       {/* Diagram */}
-      <div className="relative bg-dark-800/50 rounded-xl border border-primary-500/10 aspect-[2/1] min-h-[300px]">
-        {/* Vehicle outline */}
-        <div className="absolute inset-[15%] border-2 border-dashed border-primary-500/20 rounded-lg" />
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium text-primary-400 text-center">
+          {effectiveType === 'horse' ? 'Truck (Horse)' : 'Trailer'} - {totalPositions} Positions
+        </h4>
+        <div className="relative bg-dark-800/50 rounded-xl border border-primary-500/20 aspect-[2/1] min-h-[300px]">
+          {/* Vehicle outline */}
+          <div className="absolute inset-[12%] border-2 border-dashed border-primary-500/20 rounded-lg" />
 
-        {/* Vehicle label */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <span className="text-dark-500 text-sm font-medium">
-            {vehicleType === 'horse' ? 'Truck' : 'Trailer'}
-          </span>
-        </div>
-
-        {/* Direction indicator */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-xs text-dark-500">
-          Front
-        </div>
-
-        {/* Tyre positions */}
-        {layout.map((pos) => {
-          const tyreData = getTyreData(pos.position);
-          const hasData = !!tyreData?.condition;
-
-          return (
-            <button
-              key={pos.position}
-              onClick={() => onTyreClick?.(pos.position)}
-              className={cn(
-                'absolute w-10 h-14 -translate-x-1/2 -translate-y-1/2 rounded-md border-2 transition-all duration-200',
-                'flex flex-col items-center justify-center gap-0.5',
-                'hover:scale-110 hover:z-10',
-                hasData
-                  ? conditionColors[tyreData!.condition!]
-                  : 'bg-dark-700 border-dark-600'
-              )}
-              style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-              title={`${pos.label}${tyreData?.serialNumber ? ` - ${tyreData.serialNumber}` : ''}`}
-            >
-              <span className="text-[8px] font-bold text-white">{pos.position}</span>
-              {tyreData?.treadDepth !== undefined && (
-                <span className="text-[7px] text-white/80">{tyreData.treadDepth}mm</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Tyre list */}
-      <div className="mt-6 space-y-2">
-        <h4 className="text-sm font-medium text-dark-300 mb-3">Installed Tyres</h4>
-        {positions.filter((t) => t.serialNumber).length === 0 ? (
-          <p className="text-sm text-dark-500">No tyres recorded</p>
-        ) : (
-          <div className="grid gap-2">
-            {positions
-              .filter((t) => t.serialNumber)
-              .map((tyre) => (
-                <div
-                  key={tyre.position}
-                  className="flex items-center justify-between p-3 bg-dark-800/50 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={cn(
-                        'w-2 h-2 rounded-full',
-                        tyre.condition ? conditionColors[tyre.condition].split(' ')[0] : 'bg-dark-600'
-                      )}
-                    />
-                    <div>
-                      <span className="text-sm font-medium text-white">{tyre.position}</span>
-                      <span className="text-dark-500 mx-2">-</span>
-                      <span className="text-sm text-dark-300">{tyre.serialNumber}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {tyre.treadDepth !== undefined && (
-                      <span className="text-xs text-dark-400">{tyre.treadDepth}mm</span>
-                    )}
-                    {tyre.condition && (
-                      <Badge
-                        variant={
-                          tyre.condition === 'new' || tyre.condition === 'good'
-                            ? 'success'
-                            : tyre.condition === 'fair' || tyre.condition === 'worn'
-                            ? 'warning'
-                            : 'danger'
-                        }
-                        size="sm"
-                      >
-                        {conditionLabels[tyre.condition]}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
+          {/* Vehicle label */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <span className="text-dark-600 text-lg font-bold">
+              {effectiveType === 'horse' ? 'TRUCK' : 'TRAILER'}
+            </span>
           </div>
-        )}
+
+          {/* Direction indicator */}
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 text-xs text-dark-500 font-medium">
+            ↑ Front
+          </div>
+
+          {/* Tyre positions */}
+          {layout.map((pos) => {
+            const tyreData = getTyreData(pos.position);
+            const hasData = !!tyreData?.condition;
+
+            return (
+              <button
+                key={pos.position}
+                onClick={() => onTyreClick?.(pos.position)}
+                className={cn(
+                  'absolute w-10 h-14 -translate-x-1/2 -translate-y-1/2 rounded-md border-2 transition-all duration-200',
+                  'flex flex-col items-center justify-center gap-0.5',
+                  'hover:scale-110 hover:z-10 hover:shadow-lg',
+                  hasData
+                    ? conditionColors[tyreData!.condition!]
+                    : 'bg-dark-700 border-dark-600 hover:border-primary-500'
+                )}
+                style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                title={`${pos.label}${tyreData?.serialNumber ? ` - ${tyreData.serialNumber}` : ''}`}
+              >
+                <span className="text-[8px] font-bold text-white">{pos.position}</span>
+                {tyreData?.treadDepth !== undefined && (
+                  <span className="text-[7px] text-white/80">{tyreData.treadDepth}mm</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }

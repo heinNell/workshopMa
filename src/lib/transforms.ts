@@ -1,13 +1,13 @@
 // Transform database row types (snake_case) to frontend types (camelCase)
 
-import type { Vehicle, Inspection, JobCard, Fault, Tyre, TyreHistory, InventoryItem, ScheduledMaintenance } from '@/types';
-import type { VehicleRow } from '@/hooks/useVehicles';
-import type { InspectionRow } from '@/hooks/useInspections';
-import type { JobCardRow } from '@/hooks/useJobCards';
 import type { FaultRow } from '@/hooks/useFaults';
-import type { TyreRow, TyreHistoryRow } from '@/hooks/useTyres';
+import type { InspectionRow } from '@/hooks/useInspections';
 import type { InventoryItemRow } from '@/hooks/useInventory';
+import type { JobCardRow } from '@/hooks/useJobCards';
 import type { ScheduledMaintenanceRow } from '@/hooks/useScheduledMaintenance';
+import type { TyreHistoryRow, TyreRow } from '@/hooks/useTyres';
+import type { VehicleRow } from '@/hooks/useVehicles';
+import type { Fault, Inspection, InventoryItem, JobCard, ScheduledMaintenance, Tyre, TyreHistory, Vehicle } from '@/types';
 
 export function transformVehicle(row: VehicleRow): Vehicle {
   return {
@@ -163,7 +163,7 @@ export function transformScheduledMaintenance(row: ScheduledMaintenanceRow): Sch
     lastCompletedMileage: row.last_completed_mileage || undefined,
     scheduledDate: row.next_due_date ? new Date(row.next_due_date) : new Date(),
     nextDueMileage: row.next_due_mileage || undefined,
-    status: row.status === 'upcoming' ? 'scheduled' : row.status === 'completed' ? 'completed' : row.status,
+    status: row.status as ScheduledMaintenance['status'],
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };

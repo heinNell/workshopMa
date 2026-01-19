@@ -1,13 +1,16 @@
 'use client';
 
-import { Badge, Card } from '@/components/ui';
+import { Badge, Button, Card } from '@/components/ui';
 import { cn, formatDate } from '@/lib/utils';
 import type { Tyre, TyreHistory } from '@/types';
-import { ArrowRightLeft, ChevronRight, Circle, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, ChevronRight, Circle, Edit2, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 interface TyreListProps {
   tyres: Tyre[];
   onTyreClick?: (tyre: Tyre) => void;
+  onTyreEdit?: (tyre: Tyre) => void;
+  onTyreDelete?: (tyre: Tyre) => void;
+  showActions?: boolean;
   className?: string;
 }
 
@@ -26,7 +29,7 @@ const statusConfig = {
   disposed: { label: 'Disposed', variant: 'default' as const },
 };
 
-export function TyreList({ tyres, onTyreClick, className }: TyreListProps) {
+export function TyreList({ tyres, onTyreClick, onTyreEdit, onTyreDelete, showActions = false, className }: TyreListProps) {
   if (tyres.length === 0) {
     return (
       <Card className={cn('text-center py-12', className)}>
@@ -36,6 +39,16 @@ export function TyreList({ tyres, onTyreClick, className }: TyreListProps) {
       </Card>
     );
   }
+
+  const handleEdit = (e: React.MouseEvent, tyre: Tyre) => {
+    e.stopPropagation();
+    onTyreEdit?.(tyre);
+  };
+
+  const handleDelete = (e: React.MouseEvent, tyre: Tyre) => {
+    e.stopPropagation();
+    onTyreDelete?.(tyre);
+  };
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -110,7 +123,29 @@ export function TyreList({ tyres, onTyreClick, className }: TyreListProps) {
                 </div>
               </div>
 
-              <ChevronRight className="w-5 h-5 text-dark-500 flex-shrink-0" />
+              <div className="flex items-center gap-2">
+                {showActions && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleEdit(e, tyre)}
+                      className="text-primary-400 hover:text-primary-300"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleDelete(e, tyre)}
+                      className="text-danger-400 hover:text-danger-300"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+                {!showActions && <ChevronRight className="w-5 h-5 text-dark-500 flex-shrink-0" />}
+              </div>
             </div>
           </div>
         );

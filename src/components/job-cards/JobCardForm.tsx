@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Button, Card, Input, PriorityBadge, Select, Textarea } from '@/components/ui';
+import { Badge, Button, Card, DatePicker, Input, PriorityBadge, Select, Textarea } from '@/components/ui';
 import { Package, Plus, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
 
@@ -153,7 +153,7 @@ export function JobCardForm({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <Input
               label="Assigned To"
               value={formData.assignedTo}
@@ -172,11 +172,10 @@ export function JobCardForm({
             />
           </div>
 
-          <Input
+          <DatePicker
             label="Due Date"
-            type="date"
             value={formData.dueDate}
-            onChange={(e) => updateField('dueDate', e.target.value)}
+            onChange={(date) => updateField('dueDate', date)}
           />
         </div>
       </Card>

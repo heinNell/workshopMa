@@ -1,15 +1,19 @@
 'use client';
 
-import { Badge, Card } from '@/components/ui';
+import { Badge, Button, Card } from '@/components/ui';
 import { cn, formatDate, formatDateTime } from '@/lib/utils';
 import type { Inspection } from '@/types';
-import { AlertTriangle, ChevronRight, ClipboardCheck } from 'lucide-react';
+import { AlertTriangle, ChevronRight, ClipboardCheck, Edit2, Play, Trash2 } from 'lucide-react';
 
 interface InspectionListProps {
   inspections: Inspection[];
   fleetNumber?: string;
   showVehicle?: boolean;
+  showActions?: boolean;
   onInspectionClick?: (inspection: Inspection) => void;
+  onInspectionEdit?: (inspection: Inspection) => void;
+  onInspectionDelete?: (inspection: Inspection) => void;
+  onInspectionStart?: (inspection: Inspection) => void;
   className?: string;
 }
 
@@ -17,7 +21,11 @@ export function InspectionList({
   inspections,
   fleetNumber,
   showVehicle = true,
+  showActions = false,
   onInspectionClick,
+  onInspectionEdit,
+  onInspectionDelete,
+  onInspectionStart,
   className,
 }: InspectionListProps) {
   const getStatusVariant = (status: string) => {
@@ -97,6 +105,48 @@ export function InspectionList({
                   <Badge variant={getStatusVariant(inspection.status) as 'default' | 'success' | 'warning' | 'danger' | 'info'}>
                     {inspection.status.charAt(0).toUpperCase() + inspection.status.slice(1)}
                   </Badge>
+                  
+                  {showActions && (
+                    <div className="flex items-center gap-1 ml-auto">
+                      {inspection.status === 'scheduled' && onInspectionStart && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onInspectionStart(inspection);
+                          }}
+                          className="text-success-400 hover:text-success-300"
+                          title="Start inspection"
+                        >
+                          <Play className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onInspectionEdit?.(inspection);
+                        }}
+                        title="Edit inspection"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onInspectionDelete?.(inspection);
+                        }}
+                        className="text-danger-400 hover:text-danger-300"
+                        title="Delete inspection"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {showVehicle && (

@@ -156,3 +156,84 @@ export function useJobCardStats() {
 
   return { data, loading, refetch: fetchData };
 }
+
+// Hook for Job Card CRUD mutations
+export function useJobCardMutations() {
+  const [loading, setLoading] = useState(false);
+  const supabase = createClient();
+
+  const createJobCard = useCallback(async (jobCard: Partial<JobCardRow>) => {
+    setLoading(true);
+    try {
+      // Generate job number if not provided
+      if (!jobCard.job_number) {
+        const timestamp = Date.now().toString(36).toUpperCase();
+        jobCard.job_number = `JC-${timestamp}`;
+      }
+      
+      const { data, error } = await supabase
+        .from('job_cards')
+        .insert(jobCard)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error creating job card:', error);
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const updateJobCard = useCallback(async (id: string, updates: Partial<JobCardRow>) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('job_cards')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error updating job card:', error);
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const deleteJobCard = useCallback(async (id: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('job_cards')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('Error deleting job card:', error);
+      return { success: false, error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const updateJobCardStatus = useCallback(async (id: string, status: JobCardRow['status']) => {
+    return updateJobCard(id, { status });
+  }, [updateJobCard]);
+
+  return {
+    createJobCard,
+    updateJobCard,
+    deleteJobCard,
+    updateJobCardStatus,
+    loading,
+  };
+}

@@ -146,3 +146,93 @@ export function useInspectionStats() {
 
   return { data, loading, refetch: fetchData };
 }
+
+// Hook for Inspection CRUD mutations
+export function useInspectionMutations() {
+  const [loading, setLoading] = useState(false);
+  const supabase = createClient();
+
+  const createInspection = useCallback(async (inspection: Partial<InspectionRow>) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('inspections')
+        .insert(inspection)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error creating inspection:', error);
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const updateInspection = useCallback(async (id: string, updates: Partial<InspectionRow>) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('inspections')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error updating inspection:', error);
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const deleteInspection = useCallback(async (id: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('inspections')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('Error deleting inspection:', error);
+      return { success: false, error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const completeInspection = useCallback(async (id: string, data: {
+    faults_found?: number;
+    notes?: string;
+    odometer_reading?: number;
+  }) => {
+    return updateInspection(id, {
+      status: 'completed',
+      completed_date: new Date().toISOString(),
+      ...data,
+    });
+  }, [updateInspection]);
+
+  const startInspection = useCallback(async (id: string) => {
+    return updateInspection(id, {
+      status: 'in-progress',
+    });
+  }, [updateInspection]);
+
+  return {
+    createInspection,
+    updateInspection,
+    deleteInspection,
+    completeInspection,
+    startInspection,
+    loading,
+  };
+}

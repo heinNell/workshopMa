@@ -1,14 +1,14 @@
 'use client';
 
-import React from 'react';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
+import React from 'react';
 import { Button } from './Button';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title: string | React.ReactNode;
   description?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   children: React.ReactNode;
@@ -42,29 +42,33 @@ export function Modal({
       {/* Modal content */}
       <div
         className={cn(
-          'relative w-full mx-4 bg-dark-900 border border-primary-500/20 rounded-2xl shadow-2xl',
+          'relative w-full mx-4 bg-dark-900 border border-primary-500/20 rounded-xl shadow-2xl',
           'animate-in max-h-[90vh] overflow-hidden flex flex-col',
           sizes[size]
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-primary-500/10">
-          <div>
-            <h2 className="text-xl font-semibold text-white">{title}</h2>
+        <div className="flex items-start justify-between p-4 border-b border-primary-500/10">
+          <div className="flex-1">
+            {typeof title === 'string' ? (
+              <h2 className="text-lg font-semibold text-white">{title}</h2>
+            ) : (
+              title
+            )}
             {description && (
-              <p className="mt-1 text-sm text-dark-400">{description}</p>
+              <p className="mt-0.5 text-xs text-dark-400">{description}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-dark-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+            className="p-1.5 text-dark-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">{children}</div>
+        <div className="flex-1 overflow-y-auto p-4">{children}</div>
       </div>
     </div>
   );

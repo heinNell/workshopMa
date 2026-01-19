@@ -1,15 +1,19 @@
 'use client';
 
-import { Badge, Card, PriorityBadge } from '@/components/ui';
+import { Badge, Button, Card, PriorityBadge } from '@/components/ui';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import type { JobCard } from '@/types';
-import { ChevronRight, Clock, FileText, User, Wrench } from 'lucide-react';
+import { ChevronRight, Clock, Edit2, FileText, Trash2, User, Wrench } from 'lucide-react';
 
 interface JobCardListProps {
   jobCards: JobCard[];
   fleetNumber?: string;
   showVehicle?: boolean;
+  showActions?: boolean;
   onJobCardClick?: (jobCard: JobCard) => void;
+  onJobCardEdit?: (jobCard: JobCard) => void;
+  onJobCardDelete?: (jobCard: JobCard) => void;
+  onStatusChange?: (jobCard: JobCard, newStatus: JobCard['status']) => void;
   className?: string;
 }
 
@@ -17,7 +21,11 @@ export function JobCardList({
   jobCards,
   fleetNumber,
   showVehicle = true,
+  showActions = false,
   onJobCardClick,
+  onJobCardEdit,
+  onJobCardDelete,
+  onStatusChange,
   className,
 }: JobCardListProps) {
   const getStatusColor = (status: string) => {
@@ -106,6 +114,34 @@ export function JobCardList({
                     {formatStatus(jobCard.status)}
                   </Badge>
                   <PriorityBadge priority={jobCard.priority} />
+                  
+                  {showActions && (
+                    <div className="flex items-center gap-1 ml-auto">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onJobCardEdit?.(jobCard);
+                        }}
+                        title="Edit job card"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onJobCardDelete?.(jobCard);
+                        }}
+                        className="text-danger-400 hover:text-danger-300"
+                        title="Delete job card"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <h4 className="font-medium text-white">{jobCard.title}</h4>
@@ -139,6 +175,21 @@ export function JobCardList({
                     <span className="text-xs font-medium text-accent-400">
                       {formatCurrency(jobCard.totalCost)}
                     </span>
+                  )}
+                  
+                  {showActions && onStatusChange && jobCard.status !== 'completed' && jobCard.status !== 'closed' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const nextStatus = jobCard.status === 'open' ? 'in-progress' : 'completed';
+                        onStatusChange(jobCard, nextStatus);
+                      }}
+                      className="ml-auto text-xs"
+                    >
+                      {jobCard.status === 'open' ? 'Start Work' : 'Mark Complete'}
+                    </Button>
                   )}
                 </div>
               </div>
