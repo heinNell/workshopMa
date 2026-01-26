@@ -87,6 +87,7 @@ CREATE TABLE faults (
     description TEXT NOT NULL,
     severity VARCHAR(20) NOT NULL CHECK (severity IN ('low', 'medium', 'high', 'critical')),
     status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'assigned', 'in-progress', 'resolved')),
+    category VARCHAR(50),
     reported_by VARCHAR(100) NOT NULL,
     reported_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     resolved_date TIMESTAMP WITH TIME ZONE,

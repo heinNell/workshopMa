@@ -12,7 +12,7 @@ import { useFaultMutations, useFaultsByFleetNumber } from '@/hooks/useFaults';
 import { useInspectionMutations, useInspectionsByFleetNumber } from '@/hooks/useInspections';
 import { useJobCardMutations, useJobCardsByFleetNumber } from '@/hooks/useJobCards';
 import { useMaintenanceMutations, useScheduledMaintenanceByFleetNumber } from '@/hooks/useScheduledMaintenance';
-import { useTyreHistoryByFleetNumber, useTyresByFleetNumber } from '@/hooks/useTyres';
+import { useTyreHistoryByFleetNumber, useTyreMutations, useTyresByFleetNumber } from '@/hooks/useTyres';
 import { useVehicleByFleetNumber } from '@/hooks/useVehicles';
 import { getCategoryConfig, type FleetCategory } from '@/lib/constants';
 import
@@ -46,6 +46,27 @@ import
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
+
+// Helper function to determine vehicle type for tyre diagram based on category and fleet number
+function getTyreVehicleType(category: FleetCategory, fleetNumber: string): 'horse' | 'truck' | 'trailer' | 'interlink' | 'ridget' | 'ridget30H' | 'bakkie' {
+  switch (category) {
+    case 'horses':
+      return 'truck'; // Maps to 'horse' layout in TyreDiagram
+    case 'interlinks':
+      return 'interlink';
+    case 'ridgets':
+      // Special case for 30H which has 10 tyres (2 steering + 8 drive)
+      if (fleetNumber.toUpperCase() === '30H') {
+        return 'ridget30H';
+      }
+      return 'ridget'; // Standard 6 tyres (2 steering + 4 drive)
+    case 'bakkies':
+      return 'bakkie'; // 4 tyres (2 steering + 2 drive)
+    case 'reefers':
+    default:
+      return 'trailer';
+  }
+}
 
 export default function VehicleDashboardPage() {
   const params = useParams();
@@ -99,6 +120,7 @@ export default function VehicleDashboardPage() {
   const { deleteMaintenance, createMaintenance, updateMaintenance, loading: maintenanceMutationLoading } = useMaintenanceMutations();
   const { deleteJobCard, createJobCard, updateJobCard, updateJobCardStatus, loading: jobCardMutationLoading } = useJobCardMutations();
   const { deleteInspection, createInspection, updateInspection, startInspection, loading: inspectionMutationLoading } = useInspectionMutations();
+  const { createTyre, updateTyre, deleteTyre, addTyreHistory, loading: tyreMutationLoading } = useTyreMutations();
 
   const categoryConfig = getCategoryConfig(category);
 
@@ -279,7 +301,7 @@ export default function VehicleDashboardPage() {
                 ) : tyres.length > 0 ? (
                   <TyreDiagram
                     tyres={tyres}
-                    vehicleType={category === 'horses' ? 'truck' : category === 'interlinks' ? 'interlink' : 'trailer'}
+                    vehicleType={getTyreVehicleType(category, fleetNumber)}
                     onTyreClick={(tyre) => console.log('Tyre clicked:', tyre)}
                   />
                 ) : (
@@ -1001,10 +1023,11 @@ export default function VehicleDashboardPage() {
                   description: faultData.description || '',
                   severity: faultData.severity,
                   status: faultData.status,
-                  category: faultData.category,
+                  // Note: category column may not exist in DB yet - uncomment when migration is applied
+                  // category: faultData.category || null,
                   reported_by: faultData.reportedBy || 'Unknown',
                   reported_date: new Date().toISOString(),
-                  resolution_notes: faultData.resolutionNotes,
+                  resolution_notes: faultData.resolutionNotes || null,
                   resolved_date: faultData.status === 'resolved' ? new Date().toISOString() : null,
                 };
 
@@ -1023,6 +1046,7 @@ export default function VehicleDashboardPage() {
                 }
                 setFaultFormOpen(false);
                 setSelectedFault(null);
+                refetchFaults();
               }}
               fault={selectedFault}
               mode={faultFormMode}
@@ -1154,7 +1178,7 @@ export default function VehicleDashboardPage() {
                   <div className={category === 'interlinks' ? 'max-w-5xl mx-auto' : 'max-w-md mx-auto'}>
                     <TyreDiagram
                       tyres={tyres}
-                      vehicleType={category === 'horses' ? 'truck' : category === 'interlinks' ? 'interlink' : 'trailer'}
+                      vehicleType={getTyreVehicleType(category, fleetNumber)}
                       onTyreClick={(position) => {
                         const posStr = typeof position === 'string' ? position : position?.position || '';
                         setSelectedPosition(posStr);
@@ -1241,16 +1265,52 @@ export default function VehicleDashboardPage() {
                 setTyreAllocationOpen(false);
                 setSelectedPosition('');
               }}
-              onSubmit={(data: TyreAllocationFormData) => {
-                console.log('Allocating tyre:', data);
-                // TODO: Integrate with Supabase to save tyre allocation
+              onSubmit={async (data: TyreAllocationFormData) => {
+                const tyreData = {
+                  serial_number: data.tyreCode,
+                  vehicle_id: vehicleRow?.id || null,
+                  fleet_number: fleetNumber,
+                  position: data.position,
+                  brand: data.brand,
+                  model: data.pattern,
+                  size: data.size || '',
+                  condition: data.condition || 'new',
+                  tread_depth: data.treadDepth || null,
+                  purchase_date: data.mountedDate,
+                  purchase_price: data.cost,
+                  mileage_at_install: data.currentKilometers,
+                  current_mileage: data.currentKilometers,
+                  status: 'in-use' as const,
+                  notes: data.notes || null,
+                };
+
+                const result = await createTyre(tyreData);
+                
+                if (result.data) {
+                  // Also add to tyre history
+                  await addTyreHistory({
+                    tyre_id: result.data.id,
+                    action: 'install',
+                    vehicle_id: vehicleRow?.id || null,
+                    fleet_number: fleetNumber,
+                    position: data.position,
+                    odometer_reading: data.currentKilometers,
+                    tread_depth: data.treadDepth || null,
+                    notes: `Allocated to position ${data.position}`,
+                    performed_by: 'System',
+                    performed_date: new Date().toISOString(),
+                  });
+                }
+
                 setTyreAllocationOpen(false);
                 setSelectedPosition('');
               }}
               position={selectedPosition}
               positionLabel={selectedPosition}
               fleetNumber={fleetNumber}
-              vehicleType={category === 'horses' ? 'horse' : category === 'interlinks' ? 'interlink' : 'trailer'}
+              vehicleType={getTyreVehicleType(category, fleetNumber)}
+              loading={tyreMutationLoading}
+              existingTyrePositions={tyres.map(t => t.position).filter((p): p is string => !!p)}
             />
 
             {/* Tyre Edit Modal */}
@@ -1260,14 +1320,27 @@ export default function VehicleDashboardPage() {
                 setTyreEditOpen(false);
                 setSelectedTyre(null);
               }}
-              onSubmit={(updatedTyre: Tyre) => {
-                console.log('Saving tyre:', updatedTyre);
-                // TODO: Integrate with Supabase to update tyre
+              onSubmit={async (updatedTyre: Tyre) => {
+                if (!selectedTyre?.id) return;
+                
+                await updateTyre(selectedTyre.id, {
+                  serial_number: updatedTyre.serialNumber,
+                  brand: updatedTyre.brand,
+                  model: updatedTyre.model,
+                  size: updatedTyre.size,
+                  condition: updatedTyre.condition,
+                  tread_depth: updatedTyre.treadDepth || null,
+                  current_mileage: updatedTyre.currentMileage || null,
+                  notes: updatedTyre.notes || null,
+                  status: updatedTyre.status,
+                });
+
                 setTyreEditOpen(false);
                 setSelectedTyre(null);
               }}
               tyre={selectedTyre}
               mode="edit"
+              loading={tyreMutationLoading}
             />
 
             {/* Tyre Delete Confirmation */}
@@ -1277,9 +1350,23 @@ export default function VehicleDashboardPage() {
                 setTyreDeleteOpen(false);
                 setSelectedTyre(null);
               }}
-              onConfirm={() => {
-                console.log('Deleting tyre:', selectedTyre);
-                // TODO: Integrate with Supabase to delete tyre
+              onConfirm={async () => {
+                if (selectedTyre?.id) {
+                  // Add history entry before deleting
+                  await addTyreHistory({
+                    tyre_id: selectedTyre.id,
+                    action: 'remove',
+                    vehicle_id: vehicleRow?.id || null,
+                    fleet_number: fleetNumber,
+                    position: selectedTyre.position || null,
+                    odometer_reading: vehicleRow?.current_odometer || null,
+                    notes: `Removed from ${fleetNumber}`,
+                    performed_by: 'System',
+                    performed_date: new Date().toISOString(),
+                  });
+                  
+                  await deleteTyre(selectedTyre.id);
+                }
                 setTyreDeleteOpen(false);
                 setSelectedTyre(null);
               }}
@@ -1287,6 +1374,7 @@ export default function VehicleDashboardPage() {
               message={`Are you sure you want to remove tyre ${selectedTyre?.serialNumber} from ${fleetNumber}? This will unallocate the tyre from this vehicle.`}
               confirmText="Remove"
               variant="danger"
+              loading={tyreMutationLoading}
             />
           </div>
         </TabPanel>

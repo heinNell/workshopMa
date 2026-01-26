@@ -1,8 +1,9 @@
 'use client';
 
 import { Button, DatePicker, Input, Modal, Select, Textarea } from '@/components/ui';
+import { cn } from '@/lib/utils';
 import type { Tyre } from '@/types';
-import { Save, X } from 'lucide-react';
+import { Plus, Save, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface TyreEditFormProps {
@@ -14,7 +15,7 @@ interface TyreEditFormProps {
   mode?: 'edit' | 'create';
 }
 
-const brandOptions = [
+const defaultBrandOptions = [
   { value: '', label: 'Select Brand' },
   { value: 'Michelin', label: 'Michelin' },
   { value: 'Bridgestone', label: 'Bridgestone' },
@@ -27,6 +28,8 @@ const brandOptions = [
   { value: 'Firestone', label: 'Firestone' },
   { value: 'Other', label: 'Other' },
 ];
+
+const CUSTOM_BRANDS_KEY = 'workshopma_custom_tyre_brands';
 
 const conditionOptions = [
   { value: 'new', label: 'New' },
@@ -86,7 +89,51 @@ export function TyreEditForm({
   mode = 'edit',
 }: TyreEditFormProps) {
   const [formData, setFormData] = useState<Partial<Tyre>>(getDefaultTyre());
-  const [errors, setErrors] = useState<Partial<Record<keyof Tyre, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof Tyre, string>>>({}); 
+  
+  // Quick-add brand state
+  const [showAddBrand, setShowAddBrand] = useState(false);
+  const [newBrandName, setNewBrandName] = useState('');
+  const [customBrands, setCustomBrands] = useState<Array<{ value: string; label: string }>>([]);
+
+  // Load custom brands from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(CUSTOM_BRANDS_KEY);
+      if (stored) {
+        try {
+          setCustomBrands(JSON.parse(stored));
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+  }, []);
+
+  // Combined brand options
+  const brandOptions = [
+    ...defaultBrandOptions.slice(0, -1), // All default brands except 'Other'
+    ...customBrands,
+    defaultBrandOptions[defaultBrandOptions.length - 1], // 'Other' at the end
+  ];
+
+  const handleAddBrand = () => {
+    if (!newBrandName.trim()) return;
+    
+    const newBrand = { value: newBrandName.trim(), label: newBrandName.trim() };
+    const updatedCustomBrands = [...customBrands, newBrand];
+    setCustomBrands(updatedCustomBrands);
+    
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(CUSTOM_BRANDS_KEY, JSON.stringify(updatedCustomBrands));
+    }
+    
+    // Set the new brand as selected
+    setFormData(prev => ({ ...prev, brand: newBrand.value }));
+    setNewBrandName('');
+    setShowAddBrand(false);
+  };
 
   useEffect(() => {
     if (tyre && mode === 'edit') {
@@ -191,14 +238,69 @@ export function TyreEditForm({
               placeholder="e.g., TYR-2024-001"
               error={errors.serialNumber}
             />
-            <Select
-              label="Brand *"
-              name="brand"
-              value={formData.brand || ''}
-              onChange={handleChange}
-              options={brandOptions}
-              error={errors.brand}
-            />
+            <div className="space-y-2">
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Select
+                    label="Brand *"
+                    name="brand"
+                    value={formData.brand || ''}
+                    onChange={handleChange}
+                    options={brandOptions}
+                    error={errors.brand}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddBrand(!showAddBrand)}
+                  className={cn(
+                    "p-2 rounded-lg border transition-colors mb-0.5",
+                    showAddBrand 
+                      ? "bg-primary-500/20 border-primary-500/40 text-primary-400" 
+                      : "bg-dark-800 border-dark-600 text-dark-400 hover:border-primary-500/40 hover:text-primary-400"
+                  )}
+                  title="Add new brand"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+              {/* Quick Add Brand inline form */}
+              {showAddBrand && (
+                <div className="flex gap-2 p-3 bg-dark-800/50 rounded-lg border border-primary-500/20 animate-in slide-in-from-top-1">
+                  <Input
+                    placeholder="New brand name..."
+                    value={newBrandName}
+                    onChange={(e) => setNewBrandName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddBrand();
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAddBrand}
+                    disabled={!newBrandName.trim()}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowAddBrand(false);
+                      setNewBrandName('');
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input

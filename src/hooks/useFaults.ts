@@ -15,6 +15,7 @@ export interface FaultRow {
   description: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
   status: 'open' | 'assigned' | 'in-progress' | 'resolved';
+  category: string | null;
   reported_by: string;
   reported_date: string;
   resolved_date: string | null;

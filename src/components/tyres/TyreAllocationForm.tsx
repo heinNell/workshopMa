@@ -3,8 +3,8 @@
 import { Button, DatePicker, Input, Modal, Select, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import type { TyreAllocationFormData } from '@/types';
-import { Circle, Save, X } from 'lucide-react';
-import { useState } from 'react';
+import { Circle, Plus, Save, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface TyreAllocationFormProps {
   isOpen: boolean;
@@ -13,12 +13,119 @@ interface TyreAllocationFormProps {
   position: string;
   positionLabel?: string;
   fleetNumber?: string;
-  vehicleType?: 'horse' | 'truck' | 'trailer' | 'interlink';
+  vehicleType?: 'horse' | 'truck' | 'trailer' | 'interlink' | 'ridget' | 'ridget30H' | 'bakkie';
   initialData?: Partial<TyreAllocationFormData>;
   loading?: boolean;
+  existingTyrePositions?: string[]; // Positions that already have tyres allocated
 }
 
-const brandOptions = [
+// Position configurations for each vehicle type
+const positionConfigs: Record<string, Array<{ position: string; label: string }>> = {
+  horse: [
+    { position: 'FL', label: 'Front Left' },
+    { position: 'FR', label: 'Front Right' },
+    { position: 'RLO', label: 'Rear Left Outer' },
+    { position: 'RLI', label: 'Rear Left Inner' },
+    { position: 'RRI', label: 'Rear Right Inner' },
+    { position: 'RRO', label: 'Rear Right Outer' },
+    { position: 'RLO2', label: 'Rear Left Outer 2' },
+    { position: 'RLI2', label: 'Rear Left Inner 2' },
+    { position: 'RRI2', label: 'Rear Right Inner 2' },
+    { position: 'RRO2', label: 'Rear Right Outer 2' },
+  ],
+  truck: [
+    { position: 'FL', label: 'Front Left' },
+    { position: 'FR', label: 'Front Right' },
+    { position: 'RLO', label: 'Rear Left Outer' },
+    { position: 'RLI', label: 'Rear Left Inner' },
+    { position: 'RRI', label: 'Rear Right Inner' },
+    { position: 'RRO', label: 'Rear Right Outer' },
+    { position: 'RLO2', label: 'Rear Left Outer 2' },
+    { position: 'RLI2', label: 'Rear Left Inner 2' },
+    { position: 'RRI2', label: 'Rear Right Inner 2' },
+    { position: 'RRO2', label: 'Rear Right Outer 2' },
+  ],
+  trailer: [
+    { position: 'A1LO', label: 'Axle 1 Left Outer' },
+    { position: 'A1LI', label: 'Axle 1 Left Inner' },
+    { position: 'A1RI', label: 'Axle 1 Right Inner' },
+    { position: 'A1RO', label: 'Axle 1 Right Outer' },
+    { position: 'A2LO', label: 'Axle 2 Left Outer' },
+    { position: 'A2LI', label: 'Axle 2 Left Inner' },
+    { position: 'A2RI', label: 'Axle 2 Right Inner' },
+    { position: 'A2RO', label: 'Axle 2 Right Outer' },
+    { position: 'A3LO', label: 'Axle 3 Left Outer' },
+    { position: 'A3LI', label: 'Axle 3 Left Inner' },
+    { position: 'A3RI', label: 'Axle 3 Right Inner' },
+    { position: 'A3RO', label: 'Axle 3 Right Outer' },
+  ],
+  ridget: [
+    { position: 'FL', label: 'Front Left Steering' },
+    { position: 'FR', label: 'Front Right Steering' },
+    { position: 'RLO', label: 'Rear Left Outer' },
+    { position: 'RLI', label: 'Rear Left Inner' },
+    { position: 'RRI', label: 'Rear Right Inner' },
+    { position: 'RRO', label: 'Rear Right Outer' },
+  ],
+  ridget30H: [
+    { position: 'FL', label: 'Front Left Steering' },
+    { position: 'FR', label: 'Front Right Steering' },
+    { position: 'RLO', label: 'Rear Left Outer' },
+    { position: 'RLI', label: 'Rear Left Inner' },
+    { position: 'RRI', label: 'Rear Right Inner' },
+    { position: 'RRO', label: 'Rear Right Outer' },
+    { position: 'RLO2', label: 'Rear Left Outer 2' },
+    { position: 'RLI2', label: 'Rear Left Inner 2' },
+    { position: 'RRI2', label: 'Rear Right Inner 2' },
+    { position: 'RRO2', label: 'Rear Right Outer 2' },
+  ],
+  bakkie: [
+    { position: 'FL', label: 'Front Left Steering' },
+    { position: 'FR', label: 'Front Right Steering' },
+    { position: 'RL', label: 'Rear Left Drive' },
+    { position: 'RR', label: 'Rear Right Drive' },
+  ],
+  interlink: [
+    // Trailer 1
+    { position: 'T1-A1LO', label: 'T1 Axle 1 Left Outer' },
+    { position: 'T1-A1LI', label: 'T1 Axle 1 Left Inner' },
+    { position: 'T1-A1RI', label: 'T1 Axle 1 Right Inner' },
+    { position: 'T1-A1RO', label: 'T1 Axle 1 Right Outer' },
+    { position: 'T1-A2LO', label: 'T1 Axle 2 Left Outer' },
+    { position: 'T1-A2LI', label: 'T1 Axle 2 Left Inner' },
+    { position: 'T1-A2RI', label: 'T1 Axle 2 Right Inner' },
+    { position: 'T1-A2RO', label: 'T1 Axle 2 Right Outer' },
+    { position: 'T1-A3LO', label: 'T1 Axle 3 Left Outer' },
+    { position: 'T1-A3LI', label: 'T1 Axle 3 Left Inner' },
+    { position: 'T1-A3RI', label: 'T1 Axle 3 Right Inner' },
+    { position: 'T1-A3RO', label: 'T1 Axle 3 Right Outer' },
+    { position: 'T1-A4LO', label: 'T1 Axle 4 Left Outer' },
+    { position: 'T1-A4LI', label: 'T1 Axle 4 Left Inner' },
+    { position: 'T1-A4RI', label: 'T1 Axle 4 Right Inner' },
+    { position: 'T1-A4RO', label: 'T1 Axle 4 Right Outer' },
+    { position: 'T1-SP', label: 'T1 Spare' },
+    // Trailer 2
+    { position: 'T2-A1LO', label: 'T2 Axle 1 Left Outer' },
+    { position: 'T2-A1LI', label: 'T2 Axle 1 Left Inner' },
+    { position: 'T2-A1RI', label: 'T2 Axle 1 Right Inner' },
+    { position: 'T2-A1RO', label: 'T2 Axle 1 Right Outer' },
+    { position: 'T2-A2LO', label: 'T2 Axle 2 Left Outer' },
+    { position: 'T2-A2LI', label: 'T2 Axle 2 Left Inner' },
+    { position: 'T2-A2RI', label: 'T2 Axle 2 Right Inner' },
+    { position: 'T2-A2RO', label: 'T2 Axle 2 Right Outer' },
+    { position: 'T2-A3LO', label: 'T2 Axle 3 Left Outer' },
+    { position: 'T2-A3LI', label: 'T2 Axle 3 Left Inner' },
+    { position: 'T2-A3RI', label: 'T2 Axle 3 Right Inner' },
+    { position: 'T2-A3RO', label: 'T2 Axle 3 Right Outer' },
+    { position: 'T2-A4LO', label: 'T2 Axle 4 Left Outer' },
+    { position: 'T2-A4LI', label: 'T2 Axle 4 Left Inner' },
+    { position: 'T2-A4RI', label: 'T2 Axle 4 Right Inner' },
+    { position: 'T2-A4RO', label: 'T2 Axle 4 Right Outer' },
+    { position: 'T2-SP', label: 'T2 Spare' },
+  ],
+};
+
+const defaultBrandOptions = [
   { value: '', label: 'Select Brand' },
   { value: 'Michelin', label: 'Michelin' },
   { value: 'Bridgestone', label: 'Bridgestone' },
@@ -31,6 +138,8 @@ const brandOptions = [
   { value: 'Firestone', label: 'Firestone' },
   { value: 'Other', label: 'Other' },
 ];
+
+const CUSTOM_BRANDS_KEY = 'workshopma_custom_tyre_brands';
 
 const supplierOptions = [
   { value: '', label: 'Select Supplier' },
@@ -82,11 +191,13 @@ export function TyreAllocationForm({
   onClose,
   onSubmit,
   position,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   positionLabel,
   fleetNumber,
   vehicleType,
   initialData,
   loading = false,
+  existingTyrePositions = [],
 }: TyreAllocationFormProps) {
   const [formData, setFormData] = useState<TyreAllocationFormData>({
     ...defaultFormData,
@@ -95,6 +206,72 @@ export function TyreAllocationForm({
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof TyreAllocationFormData, string>>>({});
+  
+  // Quick-add brand state
+  const [showAddBrand, setShowAddBrand] = useState(false);
+  const [newBrandName, setNewBrandName] = useState('');
+  const [customBrands, setCustomBrands] = useState<Array<{ value: string; label: string }>>([]);
+
+  // Get position options based on vehicle type
+  const positionOptions = useMemo(() => {
+    const effectiveType = vehicleType === 'truck' ? 'horse' : vehicleType;
+    const positions = positionConfigs[effectiveType || 'horse'] || positionConfigs.horse;
+    
+    return [
+      { value: '', label: 'Select Position' },
+      ...positions.map(p => ({
+        value: p.position,
+        label: `${p.position} - ${p.label}${existingTyrePositions.includes(p.position) ? ' (Occupied)' : ''}`,
+        disabled: existingTyrePositions.includes(p.position),
+      })),
+    ];
+  }, [vehicleType, existingTyrePositions]);
+
+  // Update form data when position prop changes
+  useEffect(() => {
+    if (position) {
+      setFormData(prev => ({ ...prev, position }));
+    }
+  }, [position]);
+
+  // Load custom brands from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(CUSTOM_BRANDS_KEY);
+      if (stored) {
+        try {
+          setCustomBrands(JSON.parse(stored));
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+  }, []);
+
+  // Combined brand options
+  const brandOptions = [
+    ...defaultBrandOptions.slice(0, -1), // All default brands except 'Other'
+    ...customBrands,
+    defaultBrandOptions[defaultBrandOptions.length - 1], // 'Other' at the end
+  ];
+
+  const handleAddBrand = () => {
+    if (!newBrandName.trim()) return;
+    
+    const newBrand = { value: newBrandName.trim(), label: newBrandName.trim() };
+    const updatedCustomBrands = [...customBrands, newBrand];
+    setCustomBrands(updatedCustomBrands);
+    
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(CUSTOM_BRANDS_KEY, JSON.stringify(updatedCustomBrands));
+    }
+    
+    // Set the new brand as selected
+    setFormData(prev => ({ ...prev, brand: newBrand.value }));
+    setNewBrandName('');
+    setShowAddBrand(false);
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -113,6 +290,9 @@ export function TyreAllocationForm({
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof TyreAllocationFormData, string>> = {};
 
+    if (!formData.position) {
+      newErrors.position = 'Position is required';
+    }
     if (!formData.tyreCode.trim()) {
       newErrors.tyreCode = 'Tyre code is required';
     }
@@ -155,26 +335,48 @@ export function TyreAllocationForm({
     setErrors({});
   };
 
+  // Get the label for the currently selected position
+  const selectedPositionLabel = useMemo(() => {
+    const effectiveType = vehicleType === 'truck' ? 'horse' : vehicleType;
+    const positions = positionConfigs[effectiveType || 'horse'] || positionConfigs.horse;
+    const found = positions.find(p => p.position === formData.position);
+    return found ? found.label : formData.position;
+  }, [vehicleType, formData.position]);
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="Allocate Tyre to Position"
-      description={`Assign a tyre to position ${positionLabel || position}${fleetNumber ? ` on ${fleetNumber}` : ''}`}
+      description={`Assign a tyre to ${fleetNumber || 'vehicle'}`}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Position indicator */}
-        <div className="flex items-center gap-3 p-4 bg-primary-500/10 rounded-lg border border-primary-500/20">
-          <div className="p-2 rounded-lg bg-primary-500/20">
-            <Circle className="w-5 h-5 text-primary-400" />
-          </div>
-          <div>
-            <p className="text-sm text-dark-400">Position</p>
-            <p className="font-medium text-white">
-              {positionLabel || position}
-              {vehicleType && <span className="text-dark-400 ml-2">({vehicleType})</span>}
-            </p>
+        {/* Position selector */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-dark-300 border-b border-primary-500/10 pb-2">
+            Tyre Position
+          </h3>
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-primary-500/20 mt-6">
+              <Circle className="w-5 h-5 text-primary-400" />
+            </div>
+            <div className="flex-1">
+              <Select
+                label="Position *"
+                name="position"
+                value={formData.position}
+                onChange={handleChange}
+                options={positionOptions}
+                error={errors.position}
+              />
+              {formData.position && (
+                <p className="text-xs text-dark-400 mt-1">
+                  {selectedPositionLabel}
+                  {vehicleType && <span className="ml-1">({vehicleType === 'truck' ? 'horse' : vehicleType})</span>}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -192,14 +394,69 @@ export function TyreAllocationForm({
               placeholder="e.g., TYR-2024-001"
               error={errors.tyreCode}
             />
-            <Select
-              label="Brand *"
-              name="brand"
-              value={formData.brand}
-              onChange={handleChange}
-              options={brandOptions}
-              error={errors.brand}
-            />
+            <div className="space-y-2">
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Select
+                    label="Brand *"
+                    name="brand"
+                    value={formData.brand}
+                    onChange={handleChange}
+                    options={brandOptions}
+                    error={errors.brand}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddBrand(!showAddBrand)}
+                  className={cn(
+                    "p-2 rounded-lg border transition-colors mb-0.5",
+                    showAddBrand 
+                      ? "bg-primary-500/20 border-primary-500/40 text-primary-400" 
+                      : "bg-dark-800 border-dark-600 text-dark-400 hover:border-primary-500/40 hover:text-primary-400"
+                  )}
+                  title="Add new brand"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+              {/* Quick Add Brand inline form */}
+              {showAddBrand && (
+                <div className="flex gap-2 p-3 bg-dark-800/50 rounded-lg border border-primary-500/20 animate-in slide-in-from-top-1">
+                  <Input
+                    placeholder="New brand name..."
+                    value={newBrandName}
+                    onChange={(e) => setNewBrandName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddBrand();
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAddBrand}
+                    disabled={!newBrandName.trim()}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowAddBrand(false);
+                      setNewBrandName('');
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input

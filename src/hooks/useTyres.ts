@@ -207,3 +207,99 @@ export function useTyreStats() {
 
   return { data, loading, refetch: fetchData };
 }
+// Mutation hooks for tyres
+export function useTyreMutations() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const supabase = createClient();
+
+  const createTyre = useCallback(async (tyre: Partial<TyreRow>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('tyres')
+        .insert([tyre])
+        .select()
+        .single();
+
+      if (err) throw err;
+      return { data, error: null };
+    } catch (err) {
+      setError(err as Error);
+      return { data: null, error: err as Error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const updateTyre = useCallback(async (id: string, updates: Partial<TyreRow>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('tyres')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (err) throw err;
+      return { data, error: null };
+    } catch (err) {
+      setError(err as Error);
+      return { data: null, error: err as Error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const deleteTyre = useCallback(async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error: err } = await supabase
+        .from('tyres')
+        .delete()
+        .eq('id', id);
+
+      if (err) throw err;
+      return { success: true, error: null };
+    } catch (err) {
+      setError(err as Error);
+      return { success: false, error: err as Error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  // Add tyre history entry
+  const addTyreHistory = useCallback(async (history: Partial<TyreHistoryRow>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('tyre_history')
+        .insert([history])
+        .select()
+        .single();
+
+      if (err) throw err;
+      return { data, error: null };
+    } catch (err) {
+      setError(err as Error);
+      return { data: null, error: err as Error };
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  return {
+    createTyre,
+    updateTyre,
+    deleteTyre,
+    addTyreHistory,
+    loading,
+    error,
+  };
+}

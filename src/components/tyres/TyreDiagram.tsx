@@ -11,7 +11,7 @@ interface TyrePosition {
 }
 
 interface TyreDiagramProps {
-  vehicleType: 'horse' | 'truck' | 'trailer' | 'interlink';
+  vehicleType: 'horse' | 'truck' | 'trailer' | 'interlink' | 'ridget' | 'ridget30H' | 'bakkie';
   tyrePositions?: TyrePosition[];
   tyres?: Array<{ position?: string; serialNumber?: string; condition?: 'new' | 'good' | 'fair' | 'worn' | 'replace'; treadDepth?: number }>;
   onTyreClick?: (position: string | { position?: string }) => void;
@@ -62,6 +62,45 @@ const trailerTyreLayout: Array<{ position: string; label: string; x: number; y: 
   { position: 'A3LI', label: 'Axle 3 Left Inner', x: 25, y: 75 },
   { position: 'A3RI', label: 'Axle 3 Right Inner', x: 65, y: 75 },
   { position: 'A3RO', label: 'Axle 3 Right Outer', x: 80, y: 75 },
+];
+
+// Ridge Truck (Ridget) tyre positions - 6 tyres (2 steering + 4 drive)
+const ridgetTyreLayout: Array<{ position: string; label: string; x: number; y: number }> = [
+  // Front steering axle - single tyres
+  { position: 'FL', label: 'Front Left Steering', x: 15, y: 20 },
+  { position: 'FR', label: 'Front Right Steering', x: 75, y: 20 },
+  // Rear drive axle - dual tyres (inner/outer on each side)
+  { position: 'RLO', label: 'Rear Left Outer', x: 10, y: 70 },
+  { position: 'RLI', label: 'Rear Left Inner', x: 25, y: 70 },
+  { position: 'RRI', label: 'Rear Right Inner', x: 65, y: 70 },
+  { position: 'RRO', label: 'Rear Right Outer', x: 80, y: 70 },
+];
+
+// Ridge Truck 30H tyre positions - 10 tyres (2 steering + 8 drive on 2 axles)
+const ridget30HTyreLayout: Array<{ position: string; label: string; x: number; y: number }> = [
+  // Front steering axle - single tyres
+  { position: 'FL', label: 'Front Left Steering', x: 15, y: 20 },
+  { position: 'FR', label: 'Front Right Steering', x: 75, y: 20 },
+  // First rear drive axle - dual tyres
+  { position: 'RLO', label: 'Rear Left Outer', x: 10, y: 55 },
+  { position: 'RLI', label: 'Rear Left Inner', x: 25, y: 55 },
+  { position: 'RRI', label: 'Rear Right Inner', x: 65, y: 55 },
+  { position: 'RRO', label: 'Rear Right Outer', x: 80, y: 55 },
+  // Second rear drive axle - dual tyres
+  { position: 'RLO2', label: 'Rear Left Outer 2', x: 10, y: 80 },
+  { position: 'RLI2', label: 'Rear Left Inner 2', x: 25, y: 80 },
+  { position: 'RRI2', label: 'Rear Right Inner 2', x: 65, y: 80 },
+  { position: 'RRO2', label: 'Rear Right Outer 2', x: 80, y: 80 },
+];
+
+// LMV Bakkie tyre positions - 4 tyres (2 steering + 2 drive)
+const bakkieTyreLayout: Array<{ position: string; label: string; x: number; y: number }> = [
+  // Front steering axle - single tyres
+  { position: 'FL', label: 'Front Left Steering', x: 15, y: 25 },
+  { position: 'FR', label: 'Front Right Steering', x: 75, y: 25 },
+  // Rear drive axle - single tyres
+  { position: 'RL', label: 'Rear Left Drive', x: 15, y: 70 },
+  { position: 'RR', label: 'Rear Right Drive', x: 75, y: 70 },
 ];
 
 // Interlink Trailer 1 (Front) - 16 tyres (4 axles x 4 tyres) + 1 spare = 17 positions
@@ -128,6 +167,11 @@ function TyrePositionButton({
   const hasData = !!tyreData?.condition;
   const isSpare = pos.position.includes('SP');
 
+  // Get last 4-6 characters of serial number for display
+  const shortSerial = tyreData?.serialNumber 
+    ? tyreData.serialNumber.slice(-6) 
+    : null;
+
   return (
     <button
       onClick={() => onTyreClick?.(pos.position)}
@@ -135,7 +179,7 @@ function TyrePositionButton({
         'absolute -translate-x-1/2 -translate-y-1/2 rounded-md border-2 transition-all duration-200',
         'flex flex-col items-center justify-center gap-0.5',
         'hover:scale-110 hover:z-10',
-        isSpare ? 'w-8 h-10' : 'w-8 h-12',
+        isSpare ? 'w-10 h-12' : 'w-10 h-14',
         hasData
           ? conditionColors[tyreData!.condition!]
           : 'bg-dark-700 border-dark-600'
@@ -144,6 +188,9 @@ function TyrePositionButton({
       title={`${pos.label}${tyreData?.serialNumber ? ` - ${tyreData.serialNumber}` : ''}`}
     >
       <span className="text-[7px] font-bold text-white leading-tight">{pos.position.replace('T1-', '').replace('T2-', '')}</span>
+      {hasData && shortSerial && (
+        <span className="text-[5px] text-white/90 font-medium truncate max-w-full px-0.5">{shortSerial}</span>
+      )}
       {tyreData?.treadDepth !== undefined && (
         <span className="text-[6px] text-white/80">{tyreData.treadDepth}mm</span>
       )}
@@ -261,8 +308,40 @@ export function TyreDiagram({
     );
   }
 
-  // Standard layout for horse/trailer
-  const layout = effectiveType === 'horse' ? horseTyreLayout : trailerTyreLayout;
+  // Select layout based on vehicle type
+  const getLayout = () => {
+    switch (effectiveType) {
+      case 'horse':
+        return horseTyreLayout;
+      case 'ridget':
+        return ridgetTyreLayout;
+      case 'ridget30H':
+        return ridget30HTyreLayout;
+      case 'bakkie':
+        return bakkieTyreLayout;
+      case 'trailer':
+      default:
+        return trailerTyreLayout;
+    }
+  };
+
+  const getVehicleLabel = () => {
+    switch (effectiveType) {
+      case 'horse':
+        return 'Truck (Horse)';
+      case 'ridget':
+        return 'Ridge Truck';
+      case 'ridget30H':
+        return 'Ridge Truck 30H';
+      case 'bakkie':
+        return 'LMV Bakkie';
+      case 'trailer':
+      default:
+        return 'Trailer';
+    }
+  };
+
+  const layout = getLayout();
   const totalPositions = layout.length;
 
   return (
@@ -289,7 +368,7 @@ export function TyreDiagram({
       {/* Diagram */}
       <div className="space-y-2">
         <h4 className="text-sm font-medium text-primary-400 text-center">
-          {effectiveType === 'horse' ? 'Truck (Horse)' : 'Trailer'} - {totalPositions} Positions
+          {getVehicleLabel()} - {totalPositions} Positions
         </h4>
         <div className="relative bg-dark-800/50 rounded-xl border border-primary-500/20 aspect-[2/1] min-h-[300px]">
           {/* Vehicle outline */}
@@ -298,7 +377,7 @@ export function TyreDiagram({
           {/* Vehicle label */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <span className="text-dark-600 text-lg font-bold">
-              {effectiveType === 'horse' ? 'TRUCK' : 'TRAILER'}
+              {effectiveType === 'horse' ? 'TRUCK' : effectiveType === 'ridget' || effectiveType === 'ridget30H' ? 'RIDGET' : effectiveType === 'bakkie' ? 'BAKKIE' : 'TRAILER'}
             </span>
           </div>
 
@@ -311,13 +390,17 @@ export function TyreDiagram({
           {layout.map((pos) => {
             const tyreData = getTyreData(pos.position);
             const hasData = !!tyreData?.condition;
+            // Get last 6 characters of serial number for display
+            const shortSerial = tyreData?.serialNumber 
+              ? tyreData.serialNumber.slice(-6) 
+              : null;
 
             return (
               <button
                 key={pos.position}
                 onClick={() => onTyreClick?.(pos.position)}
                 className={cn(
-                  'absolute w-10 h-14 -translate-x-1/2 -translate-y-1/2 rounded-md border-2 transition-all duration-200',
+                  'absolute w-12 h-16 -translate-x-1/2 -translate-y-1/2 rounded-md border-2 transition-all duration-200',
                   'flex flex-col items-center justify-center gap-0.5',
                   'hover:scale-110 hover:z-10 hover:shadow-lg',
                   hasData
@@ -328,6 +411,9 @@ export function TyreDiagram({
                 title={`${pos.label}${tyreData?.serialNumber ? ` - ${tyreData.serialNumber}` : ''}`}
               >
                 <span className="text-[8px] font-bold text-white">{pos.position}</span>
+                {hasData && shortSerial && (
+                  <span className="text-[6px] text-white/90 font-medium truncate max-w-full px-0.5">{shortSerial}</span>
+                )}
                 {tyreData?.treadDepth !== undefined && (
                   <span className="text-[7px] text-white/80">{tyreData.treadDepth}mm</span>
                 )}
